@@ -279,86 +279,108 @@ export default function LandingPage() {
 
       {/* ── Pricing ─────────────────────────────────────────────────────────── */}
       <section id="pricing" className="bg-[#10101A] px-6 py-24">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-4xl">
           <div className="mb-14 text-center">
             <p className="mb-3 text-xs font-bold uppercase tracking-widest text-[#C8102E]">Pricing</p>
             <h2 className="text-4xl font-black tracking-tight md:text-5xl">
-              Simple, honest pricing.
+              Performance-based pricing.
             </h2>
-            <p className="mt-4 text-gray-500">Pay per property. Cancel anytime.</p>
+            <p className="mt-4 text-gray-500">You pay a flat fee — then only when we deliver a signed lease.</p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            {[
-              {
-                name: "Starter",
-                price: "$199",
-                period: "/mo per property",
-                desc: "For operators with 1–2 properties getting started with AI leasing.",
-                features: ["1 property", "Unlimited leads", "AI SMS responses", "Lead qualification", "Basic dashboard"],
-                cta: "Start Free Trial",
-                highlight: false,
-              },
-              {
-                name: "Growth",
-                price: "$399",
-                period: "/mo per property",
-                desc: "For active operators running 3–10 properties with a full pipeline.",
-                features: ["Up to 10 properties", "Everything in Starter", "Automated follow-ups", "Lead scoring", "Tour tracking", "Priority support"],
-                cta: "Start Free Trial",
-                highlight: true,
-              },
-              {
-                name: "Portfolio",
-                price: "Custom",
-                period: "",
-                desc: "For institutional operators managing 10+ communities.",
-                features: ["Unlimited properties", "Everything in Growth", "Custom integrations", "Dedicated account manager", "SLA guarantee"],
-                cta: "Contact Sales",
-                highlight: false,
-              },
-            ].map((plan) => (
-              <div
-                key={plan.name}
-                className={`relative rounded-2xl border p-8 ${
-                  plan.highlight
-                    ? "border-[#C8102E] bg-[#C8102E]/5"
-                    : "border-[#1E1E2E] bg-[#16161F]"
-                }`}
-              >
-                {plan.highlight && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-[#C8102E] px-4 py-1 text-xs font-bold text-white">
-                    Most Popular
-                  </div>
-                )}
-                <p className="mb-1 font-semibold text-gray-400">{plan.name}</p>
-                <div className="mb-1 flex items-end gap-1">
-                  <span className="text-4xl font-black text-white">{plan.price}</span>
-                  {plan.period && <span className="mb-1 text-sm text-gray-500">{plan.period}</span>}
-                </div>
-                <p className="mb-6 text-sm text-gray-500">{plan.desc}</p>
-
-                <ul className="mb-8 space-y-2.5">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-sm text-gray-300">
-                      <span className="text-[#C8102E]">✓</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  href={plan.name === "Portfolio" ? "/contact" : "/free-trial"}
-                  className={`block w-full rounded-xl py-3 text-center text-sm font-bold transition-colors ${
-                    plan.highlight
-                      ? "bg-[#C8102E] text-white hover:bg-[#A50D25]"
-                      : "border border-[#1E1E2E] text-gray-300 hover:border-gray-500 hover:text-white"
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
+          {/* 2×2 fee cards */}
+          <div className="mb-4 grid gap-4 md:grid-cols-2">
+            {/* Setup Fee */}
+            <div className="rounded-2xl border border-[#1E1E2E] bg-[#16161F] p-7">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">One-Time</p>
+                <span className="rounded-full border border-[#1E1E2E] px-2.5 py-0.5 text-[10px] font-semibold text-gray-500">Setup</span>
               </div>
-            ))}
+              <div className="mb-3 flex items-end gap-1">
+                <span className="text-4xl font-black text-white">$1,000</span>
+              </div>
+              <p className="mb-4 text-sm text-gray-400">Paid once at sign-up. Covers everything to go live.</p>
+              <ul className="space-y-2">
+                {["Property onboarding & configuration", "Twilio number provisioning", "AI prompt setup & guardrails", "Team walkthrough & training"].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-[#C8102E]">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Platform Fee */}
+            <div className="rounded-2xl border border-[#C8102E] bg-[#C8102E]/5 p-7">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#C8102E]">Monthly</p>
+                <span className="rounded-full border border-[#C8102E]/30 bg-[#C8102E]/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#C8102E]">Platform</span>
+              </div>
+              <div className="mb-3 flex items-end gap-1">
+                <span className="text-4xl font-black text-white">$1,000</span>
+                <span className="mb-1 text-sm text-gray-400">/month</span>
+              </div>
+              <p className="mb-4 text-sm text-gray-400">Full platform access. Cancel anytime.</p>
+              <ul className="space-y-2">
+                {["Unlimited leads", "AI SMS qualification & follow-up", "Human takeover & escalation", "Conversation dashboard & analytics", "Priority support"].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-[#C8102E]">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Marketing Add-On */}
+            <div className="rounded-2xl border border-[#1E1E2E] bg-[#16161F] p-7">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Add-On · Monthly</p>
+                <span className="rounded-full border border-[#1E1E2E] px-2.5 py-0.5 text-[10px] font-semibold text-gray-500">Optional</span>
+              </div>
+              <div className="mb-3 flex items-end gap-1">
+                <span className="text-4xl font-black text-white">$2,000</span>
+                <span className="mb-1 text-sm text-gray-400">/month</span>
+              </div>
+              <p className="mb-4 text-sm text-gray-400">AI-generated ad campaigns. You approve before anything goes live.</p>
+              <ul className="space-y-2">
+                {["AI ad strategy (Facebook & Google)", "3–5 creative variations per campaign", "Approval required before launch", "Leads flow directly into LUB pipeline"].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-[#C8102E]">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Performance Fee */}
+            <div className="rounded-2xl border border-amber-800/50 bg-amber-950/20 p-7">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-amber-500">Per Result</p>
+                <span className="rounded-full border border-amber-800/40 bg-amber-900/20 px-2.5 py-0.5 text-[10px] font-semibold text-amber-400">Performance</span>
+              </div>
+              <div className="mb-3 flex items-end gap-1">
+                <span className="text-4xl font-black text-white">$200</span>
+                <span className="mb-1 text-sm text-gray-400">/lease signed</span>
+              </div>
+              <p className="mb-4 text-sm text-gray-400">Only charged when a LUB-attributed lead signs a lease.</p>
+              <ul className="space-y-2">
+                {["Only applies to LUB-managed leads", "Lease must be signed within 30 days", "Attribution tracked automatically", "Monthly invoice with full breakdown"].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
+                    <span className="text-amber-400">✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Summary line */}
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">$1,000 setup · $1,000/month · $200 per lease signed</p>
+            <Link
+              href="/pricing"
+              className="mt-2 inline-block text-sm font-medium text-[#C8102E] hover:underline"
+            >
+              See full pricing details →
+            </Link>
           </div>
         </div>
       </section>
