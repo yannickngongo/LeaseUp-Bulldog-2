@@ -2,91 +2,40 @@ import Link from "next/link";
 import { MarketingNav } from "@/components/MarketingNav";
 import { MarketingFooter } from "@/components/MarketingFooter";
 
-const PLANS = [
+const FAQS = [
   {
-    name: "Starter",
-    price: "$199",
-    period: "/mo per property",
-    desc: "For operators with 1–2 properties getting started with AI leasing.",
-    features: [
-      "1 property",
-      "Unlimited leads",
-      "AI SMS responses",
-      "Lead qualification",
-      "Basic dashboard",
-      "Email support",
-    ],
-    notIncluded: ["Automated follow-ups", "Lead scoring", "Tour tracking", "Priority support"],
-    cta: "Start Free Trial",
-    href: "/free-trial",
-    highlight: false,
+    q: "What is the setup fee for?",
+    a: "The $1,000 one-time setup fee covers onboarding, property configuration, AI prompt setup, Twilio number provisioning, and a live walkthrough with our team.",
   },
   {
-    name: "Growth",
-    price: "$399",
-    period: "/mo per property",
-    desc: "For active operators running 3–10 properties with a full pipeline.",
-    features: [
-      "Up to 10 properties",
-      "Everything in Starter",
-      "Automated follow-ups",
-      "AI lead scoring",
-      "Tour tracking",
-      "Application push",
-      "Priority support",
-    ],
-    notIncluded: ["Custom integrations", "Dedicated account manager"],
-    cta: "Start Free Trial",
-    href: "/free-trial",
-    highlight: true,
+    q: "What does the $1,000/month platform fee include?",
+    a: "The full LeaseUp Bulldog platform — AI lead qualification, automated follow-up sequences, human takeover, conversation dashboard, calendar, insights, and unlimited leads.",
   },
   {
-    name: "Portfolio",
-    price: "Custom",
-    period: "",
-    desc: "For institutional operators managing 10+ communities.",
-    features: [
-      "Unlimited properties",
-      "Everything in Growth",
-      "Custom integrations",
-      "Dedicated account manager",
-      "SLA guarantee",
-      "Custom AI persona",
-      "White-label option",
-    ],
-    notIncluded: [],
-    cta: "Contact Sales",
-    href: "/contact",
-    highlight: false,
+    q: "What is the Marketing Add-On?",
+    a: "For $2,000/month our AI generates ad strategy, headlines, and copy variations for Facebook and Google. You review and approve each ad before anything goes live. Leads flow directly into your LUB pipeline.",
+  },
+  {
+    q: "How does the $200 performance fee work?",
+    a: "You pay $200 for every lease signed through LUB, as long as the lease is signed within 30 days of first contact. We only charge you when we deliver a result.",
+  },
+  {
+    q: "What counts as 'within 30 days'?",
+    a: "The 30-day window starts from the date the first AI message is sent to a lead. If a lease is signed within that window and the lead was managed through LUB, the $200 fee applies.",
+  },
+  {
+    q: "Is there a free trial?",
+    a: "Yes — contact us for a 14-day pilot. You only pay the setup fee to get started. No platform fee is charged during the trial period.",
   },
 ];
 
-const FAQS = [
-  {
-    q: "Is there a free trial?",
-    a: "Yes — 14 days free on any plan. No credit card required to start. You'll be prompted to add payment info before day 14.",
-  },
-  {
-    q: "What counts as a 'property'?",
-    a: "One property = one apartment community with its own Twilio phone number. You can have multiple buildings at the same address under one property.",
-  },
-  {
-    q: "How does billing work?",
-    a: "You're billed monthly per property. Upgrade, downgrade, or cancel anytime from your account settings.",
-  },
-  {
-    q: "Can I add more properties mid-cycle?",
-    a: "Yes. Additional properties are prorated from the date you add them.",
-  },
-  {
-    q: "Does it work with my existing lead sources?",
-    a: "Yes — any lead source that sends an email or webhook works. Zillow, Apartments.com, Facebook, your own website, manual entry, all supported.",
-  },
-  {
-    q: "Is SMS usage included in the price?",
-    a: "Twilio SMS costs are passed through at cost (typically $0.0079/message). These are minimal for most operators.",
-  },
-];
+function Check() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0 text-[#C8102E]">
+      <path d="M3 8l3.5 3.5L13 4" />
+    </svg>
+  );
+}
 
 export default function PricingPage() {
   return (
@@ -99,132 +48,170 @@ export default function PricingPage() {
         <div className="relative mx-auto max-w-2xl">
           <p className="mb-4 text-xs font-bold uppercase tracking-widest text-[#C8102E]">Pricing</p>
           <h1 className="mb-5 text-5xl font-black tracking-tight md:text-6xl">
-            Simple, honest pricing.
+            Performance-based pricing.
           </h1>
           <p className="text-lg text-gray-400">
-            Pay per property. Cancel anytime. Start free.
+            You pay a flat platform fee — and then only when we deliver a signed lease.
           </p>
         </div>
       </section>
 
-      {/* Plans */}
+      {/* Fee cards */}
       <section className="px-6 pb-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="grid gap-6 md:grid-cols-3">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.name}
-                className={`relative rounded-2xl border p-8 flex flex-col ${
-                  plan.highlight
-                    ? "border-[#C8102E] bg-[#C8102E]/5"
-                    : "border-[#1E1E2E] bg-[#10101A]"
-                }`}
-              >
-                {plan.highlight && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-[#C8102E] px-4 py-1 text-xs font-bold text-white whitespace-nowrap">
-                    Most Popular
-                  </div>
-                )}
-                <div className="mb-6">
-                  <p className="mb-1 font-semibold text-gray-400">{plan.name}</p>
-                  <div className="mb-2 flex items-end gap-1">
-                    <span className="text-4xl font-black text-white">{plan.price}</span>
-                    {plan.period && <span className="mb-1 text-sm text-gray-500">{plan.period}</span>}
-                  </div>
-                  <p className="text-sm text-gray-500">{plan.desc}</p>
-                </div>
+        <div className="mx-auto max-w-4xl">
 
-                <div className="flex-1">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-600">Included</p>
-                  <ul className="mb-5 space-y-2.5">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2.5 text-sm text-gray-300">
-                        <span className="shrink-0 text-[#C8102E]">✓</span>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-
-                  {plan.notIncluded.length > 0 && (
-                    <>
-                      <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-700">Not included</p>
-                      <ul className="mb-5 space-y-2.5">
-                        {plan.notIncluded.map((f) => (
-                          <li key={f} className="flex items-center gap-2.5 text-sm text-gray-600">
-                            <span className="shrink-0">—</span>
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  )}
-                </div>
-
-                <Link
-                  href={plan.href}
-                  className={`mt-4 block w-full rounded-xl py-3 text-center text-sm font-bold transition-colors ${
-                    plan.highlight
-                      ? "bg-[#C8102E] text-white hover:bg-[#A50D25]"
-                      : "border border-[#1E1E2E] text-gray-300 hover:border-gray-500 hover:text-white"
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
+          {/* Top row: 2 fixed fees */}
+          <div className="mb-4 grid gap-4 md:grid-cols-2">
+            {/* Setup Fee */}
+            <div className="rounded-2xl border border-[#1E1E2E] bg-[#10101A] p-8">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">One-Time</p>
+                <span className="rounded-full border border-[#1E1E2E] px-2.5 py-0.5 text-[10px] font-semibold text-gray-500">Setup</span>
               </div>
-            ))}
+              <div className="mb-4 flex items-end gap-1">
+                <span className="text-5xl font-black text-white">$1,000</span>
+              </div>
+              <p className="mb-5 text-sm text-gray-400">Paid once at sign-up. Covers everything needed to go live.</p>
+              <ul className="space-y-2.5">
+                {[
+                  "Property onboarding & configuration",
+                  "Twilio phone number provisioning",
+                  "AI prompt setup & guardrails",
+                  "Team walkthrough & training",
+                  "First 2 weeks of hands-on support",
+                ].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-gray-300">
+                    <Check /> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Platform Fee */}
+            <div className="rounded-2xl border border-[#C8102E] bg-[#C8102E]/5 p-8">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#C8102E]">Monthly</p>
+                <span className="rounded-full border border-[#C8102E]/30 bg-[#C8102E]/10 px-2.5 py-0.5 text-[10px] font-semibold text-[#C8102E]">Platform</span>
+              </div>
+              <div className="mb-4 flex items-end gap-1">
+                <span className="text-5xl font-black text-white">$1,000</span>
+                <span className="mb-1.5 text-sm text-gray-400">/month</span>
+              </div>
+              <p className="mb-5 text-sm text-gray-400">Full platform access. Cancel anytime.</p>
+              <ul className="space-y-2.5">
+                {[
+                  "Unlimited leads",
+                  "AI SMS qualification & follow-up",
+                  "Human takeover & escalation",
+                  "Conversation dashboard",
+                  "Calendar & tour tracking",
+                  "Performance analytics",
+                  "Priority support",
+                ].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-gray-300">
+                    <Check /> {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-gray-600">
-            All plans include a 14-day free trial. Twilio SMS costs passed through at cost.
-          </p>
-        </div>
-      </section>
-
-      {/* Comparison table */}
-      <section className="border-y border-[#1E1E2E] bg-[#10101A] px-6 py-20">
-        <div className="mx-auto max-w-4xl">
-          <h2 className="mb-10 text-center text-3xl font-black">Compare plans</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#1E1E2E]">
-                  <th className="pb-4 text-left font-semibold text-gray-500">Feature</th>
-                  <th className="pb-4 text-center font-semibold text-gray-300">Starter</th>
-                  <th className="pb-4 text-center font-semibold text-[#C8102E]">Growth</th>
-                  <th className="pb-4 text-center font-semibold text-gray-300">Portfolio</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1E1E2E]">
+          {/* Bottom row: 2 variable fees */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Marketing Add-On */}
+            <div className="rounded-2xl border border-[#1E1E2E] bg-[#10101A] p-8">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Add-On · Monthly</p>
+                <span className="rounded-full border border-[#1E1E2E] px-2.5 py-0.5 text-[10px] font-semibold text-gray-500">Optional</span>
+              </div>
+              <div className="mb-4 flex items-end gap-1">
+                <span className="text-5xl font-black text-white">$2,000</span>
+                <span className="mb-1.5 text-sm text-gray-400">/month</span>
+              </div>
+              <p className="mb-5 text-sm text-gray-400">AI-generated ad campaigns. You approve before anything goes live.</p>
+              <ul className="space-y-2.5">
                 {[
-                  ["Properties", "1", "Up to 10", "Unlimited"],
-                  ["Leads", "Unlimited", "Unlimited", "Unlimited"],
-                  ["AI SMS Response", "✓", "✓", "✓"],
-                  ["Lead Qualification", "✓", "✓", "✓"],
-                  ["Dashboard", "Basic", "Full", "Full"],
-                  ["Automated Follow-Up", "—", "✓", "✓"],
-                  ["Lead Scoring", "—", "✓", "✓"],
-                  ["Tour Tracking", "—", "✓", "✓"],
-                  ["Application Push", "—", "✓", "✓"],
-                  ["Custom Integrations", "—", "—", "✓"],
-                  ["Dedicated Account Manager", "—", "—", "✓"],
-                  ["SLA Guarantee", "—", "—", "✓"],
-                  ["Support", "Email", "Priority", "Dedicated"],
-                ].map(([feat, s, g, p]) => (
-                  <tr key={feat}>
-                    <td className="py-3 text-gray-400">{feat}</td>
-                    <td className="py-3 text-center text-gray-500">{s}</td>
-                    <td className="py-3 text-center text-gray-200">{g}</td>
-                    <td className="py-3 text-center text-gray-500">{p}</td>
-                  </tr>
+                  "AI ad strategy (Facebook & Google)",
+                  "3–5 creative variations per campaign",
+                  "Headline, copy & CTA generation",
+                  "Approval required before launch",
+                  "Leads flow directly into LUB pipeline",
+                  "AI follow-up triggered immediately",
+                ].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-gray-300">
+                    <Check /> {f}
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+            </div>
+
+            {/* Performance Fee */}
+            <div className="rounded-2xl border border-amber-800/50 bg-amber-950/20 p-8">
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-xs font-bold uppercase tracking-widest text-amber-500">Per Result</p>
+                <span className="rounded-full border border-amber-800/40 bg-amber-900/20 px-2.5 py-0.5 text-[10px] font-semibold text-amber-400">Performance</span>
+              </div>
+              <div className="mb-4 flex items-end gap-1">
+                <span className="text-5xl font-black text-white">$200</span>
+                <span className="mb-1.5 text-sm text-gray-400">/lease signed</span>
+              </div>
+              <p className="mb-5 text-sm text-gray-400">Only charged when a LUB-attributed lead signs a lease.</p>
+              <ul className="space-y-2.5">
+                {[
+                  "Only applies to LUB-managed leads",
+                  "Lease must be signed within 30 days of first contact",
+                  "Attribution window tracked automatically",
+                  "Full audit trail per lease",
+                  "Monthly invoice with breakdown",
+                ].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-gray-300">
+                    <Check /> {f}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 rounded-xl border border-amber-800/30 bg-amber-900/20 p-4">
+                <p className="text-xs font-semibold text-amber-400">Example month</p>
+                <p className="mt-1 text-sm text-gray-300">
+                  5 leases signed through LUB <span className="text-gray-500">→</span> <span className="font-bold text-white">$1,000</span> in performance fees
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500">On top of the $1,000 platform fee = $2,000 total that month</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Total example */}
+          <div className="mt-6 rounded-2xl border border-[#1E1E2E] bg-[#10101A] p-6">
+            <p className="mb-4 text-xs font-bold uppercase tracking-widest text-gray-500">What a typical month looks like</p>
+            <div className="grid gap-3 sm:grid-cols-4">
+              {[
+                { label: "Platform Fee",       amount: "$1,000",  note: "flat monthly",         color: "text-white" },
+                { label: "Marketing Add-On",   amount: "$2,000",  note: "if opted in",          color: "text-gray-400" },
+                { label: "Performance Fees",   amount: "$600",    note: "3 leases × $200",      color: "text-[#C8102E]" },
+                { label: "Total",              amount: "$1,600",  note: "without marketing",    color: "text-white" },
+              ].map(s => (
+                <div key={s.label} className="rounded-xl border border-[#1E1E2E] p-4">
+                  <p className="text-xs text-gray-500">{s.label}</p>
+                  <p className={`mt-1 text-2xl font-black ${s.color}`}>{s.amount}</p>
+                  <p className="mt-0.5 text-[11px] text-gray-600">{s.note}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8 text-center">
+            <Link
+              href="/free-trial"
+              className="inline-block rounded-xl bg-[#C8102E] px-10 py-4 text-sm font-bold text-white hover:bg-[#A50D25] transition-colors shadow-lg shadow-[#C8102E]/25"
+            >
+              Get Started →
+            </Link>
+            <p className="mt-3 text-xs text-gray-600">14-day pilot available. Talk to us before committing.</p>
           </div>
         </div>
       </section>
 
       {/* FAQs */}
-      <section className="px-6 py-20">
+      <section className="border-t border-[#1E1E2E] px-6 py-20">
         <div className="mx-auto max-w-2xl">
           <h2 className="mb-10 text-center text-3xl font-black">Frequently asked questions</h2>
           <div className="space-y-4">
@@ -239,18 +226,18 @@ export default function PricingPage() {
       </section>
 
       {/* CTA */}
-      <section className="relative overflow-hidden px-6 py-20 text-center">
+      <section className="relative overflow-hidden border-t border-[#1E1E2E] px-6 py-20 text-center">
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="h-[400px] w-[600px] rounded-full bg-[#C8102E]/10 blur-[100px]" />
         </div>
         <div className="relative mx-auto max-w-xl">
-          <h2 className="mb-5 text-4xl font-black">Start free. Upgrade anytime.</h2>
-          <p className="mb-8 text-gray-400">14-day trial, no credit card required.</p>
+          <h2 className="mb-5 text-4xl font-black">Only pay when we deliver.</h2>
+          <p className="mb-8 text-gray-400">$1,000 setup · $1,000/month · $200 per lease signed.</p>
           <Link
             href="/free-trial"
             className="inline-block rounded-xl bg-[#C8102E] px-10 py-4 text-sm font-bold text-white hover:bg-[#A50D25] transition-colors shadow-lg shadow-[#C8102E]/25"
           >
-            Start Free Trial →
+            Start the Conversation →
           </Link>
         </div>
       </section>

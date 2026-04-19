@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
@@ -157,6 +158,173 @@ function MetricCell({ label, value, good, benchmark }: { label: string; value: s
       <p className={cn("mt-0.5 text-[11px]", good ? "text-green-600" : "text-gray-400")}>
         {good ? "✓" : "↓"} Benchmark: {benchmark}
       </p>
+    </div>
+  );
+}
+
+// ─── AI Configuration Section ─────────────────────────────────────────────────
+
+function AIConfigSection() {
+  const [saved, setSaved] = useState(false);
+  const [config, setConfig] = useState({
+    leasing_special_title:       "",
+    leasing_special_description: "",
+    pricing_notes:               "",
+    application_link:            "",
+    tour_instructions:           "",
+    office_hours:                "",
+    objection_handling_notes:    "",
+    allowed_messaging:           "",
+    disallowed_claims:           "",
+    escalation_triggers:         "",
+  });
+
+  function handleChange(field: keyof typeof config, value: string) {
+    setConfig(prev => ({ ...prev, [field]: value }));
+    setSaved(false);
+  }
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <SectionLabel>AI Configuration</SectionLabel>
+        <p className="text-xs text-gray-400 dark:text-gray-500">
+          The AI can ONLY reference what you define here. It will never invent pricing, specials, or policies.
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-gray-100 bg-white shadow-sm dark:border-white/5 dark:bg-[#1C1F2E]">
+        {/* What the AI can say */}
+        <div className="border-b border-gray-100 px-6 py-5 dark:border-white/5">
+          <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">What the AI can reference</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">Current Special — Title</label>
+              <input
+                placeholder="e.g. 1 Month Free on 12-Month Leases"
+                value={config.leasing_special_title}
+                onChange={e => handleChange("leasing_special_title", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">Current Special — Details</label>
+              <input
+                placeholder="e.g. Valid for move-ins before May 31"
+                value={config.leasing_special_description}
+                onChange={e => handleChange("leasing_special_description", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">Pricing Notes</label>
+              <input
+                placeholder="e.g. 1BRs from $1,200, 2BRs from $1,500/mo"
+                value={config.pricing_notes}
+                onChange={e => handleChange("pricing_notes", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">Application Link</label>
+              <input
+                type="url"
+                placeholder="https://apply.mypropertyportal.com/..."
+                value={config.application_link}
+                onChange={e => handleChange("application_link", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">Tour Instructions</label>
+              <input
+                placeholder="e.g. Tours Mon–Fri 9am–5pm, call to schedule"
+                value={config.tour_instructions}
+                onChange={e => handleChange("tour_instructions", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">Office Hours</label>
+              <input
+                placeholder="e.g. Mon–Sat 9am–6pm, Sun 11am–4pm"
+                value={config.office_hours}
+                onChange={e => handleChange("office_hours", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Guardrails */}
+        <div className="border-b border-gray-100 px-6 py-5 dark:border-white/5">
+          <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Guardrails</h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">Allowed Messaging</label>
+              <textarea
+                rows={3}
+                placeholder="What topics and messages the AI is allowed to discuss..."
+                value={config.allowed_messaging}
+                onChange={e => handleChange("allowed_messaging", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                Disallowed Claims
+                <span className="ml-1 text-red-500">*</span>
+              </label>
+              <textarea
+                rows={3}
+                placeholder="e.g. Do not promise specific move-in dates. Do not quote concessions not listed above."
+                value={config.disallowed_claims}
+                onChange={e => handleChange("disallowed_claims", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">Objection Handling Notes</label>
+              <textarea
+                rows={3}
+                placeholder="e.g. If asked about pets: we allow cats and small dogs under 30lbs with a $300 deposit."
+                value={config.objection_handling_notes}
+                onChange={e => handleChange("objection_handling_notes", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-gray-600 dark:text-gray-400">
+                Escalation Triggers
+                <span className="ml-1.5 text-[10px] text-gray-400">(comma-separated)</span>
+              </label>
+              <textarea
+                rows={3}
+                placeholder="e.g. lease terms, eviction, legal, attorney, discrimination"
+                value={config.escalation_triggers}
+                onChange={e => handleChange("escalation_triggers", e.target.value)}
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
+              />
+              <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">
+                When a lead mentions these topics, AI stops and escalates to a human.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Save */}
+        <div className="flex items-center justify-between px-6 py-4">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Changes take effect on the next AI reply sent to any lead at this property.
+          </p>
+          <button
+            onClick={() => setSaved(true)}
+            className="rounded-lg bg-[#C8102E] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#A50D25]"
+          >
+            {saved ? "Saved ✓" : "Save AI Config"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -417,6 +585,9 @@ export default function PropertyDetailPage() {
           })}
         </div>
       </div>
+
+      {/* ── AI Configuration ────────────────────────────────────────────── */}
+      <AIConfigSection />
 
       {/* ── Recent Lead Activity ────────────────────────────────────────── */}
       <div>
