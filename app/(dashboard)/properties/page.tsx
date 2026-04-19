@@ -248,8 +248,8 @@ export default function PropertiesPage() {
       {/* ── Page header ─────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Properties</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Properties</h1>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
             {enriched.length} communities · {totals.units} total units
           </p>
         </div>
@@ -281,7 +281,7 @@ export default function PropertiesPage() {
 
       {/* ── Health strip ─────────────────────────────────────────────────── */}
       <div className="flex gap-2">
-        <div className="flex flex-1 overflow-hidden rounded-lg border border-gray-100 bg-white">
+        <div className="flex flex-1 overflow-hidden rounded-lg border border-gray-100 bg-white dark:border-white/5 dark:bg-[#1C1F2E]">
           {(
             [
               { health: "on_track"        as HealthStatus, count: totals.onTrack,  color: "bg-green-500" },
@@ -299,8 +299,8 @@ export default function PropertiesPage() {
               )}
             >
               <div className={cn("mb-1 h-1 w-full rounded-full", seg.color)} />
-              <span className="font-semibold text-gray-900">{seg.count}</span>
-              <span className="text-[10px] text-gray-400">{HEALTH_STYLES[seg.health].label}</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{seg.count}</span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">{HEALTH_STYLES[seg.health].label}</span>
             </button>
           ))}
         </div>
@@ -318,7 +318,7 @@ export default function PropertiesPage() {
             placeholder="Search properties…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-8 pr-3 text-xs text-gray-700 placeholder-gray-400 outline-none focus:border-gray-400 focus:ring-0"
+            className="w-full rounded-lg border border-gray-200 bg-white py-2 pl-8 pr-3 text-xs text-gray-700 placeholder-gray-400 outline-none focus:border-gray-400 focus:ring-0 dark:border-white/10 dark:bg-white/5 dark:text-gray-300"
           />
         </div>
 
@@ -331,8 +331,8 @@ export default function PropertiesPage() {
               className={cn(
                 "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                 filterStatus === f.key
-                  ? "bg-gray-900 text-white"
-                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
               )}
             >
               {f.label}
@@ -346,14 +346,14 @@ export default function PropertiesPage() {
         </div>
 
         {/* View toggle */}
-        <div className="ml-auto flex rounded-lg border border-gray-200 bg-white p-0.5">
+        <div className="ml-auto flex rounded-lg border border-gray-200 bg-white p-0.5 dark:border-white/10 dark:bg-white/5">
           {(["table", "cards"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
               className={cn(
                 "rounded-md px-3 py-1.5 text-xs font-medium transition-colors capitalize",
-                view === v ? "bg-gray-100 text-gray-900" : "text-gray-500 hover:text-gray-700"
+                view === v ? "bg-gray-100 text-gray-900 dark:bg-white/10 dark:text-gray-100" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               )}
             >
               {v === "table" ? (
@@ -403,13 +403,13 @@ export default function PropertiesPage() {
                 <th className="px-5 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-white/5">
               {filtered.map((prop) => (
-                <tr key={prop.id} className="group transition-colors hover:bg-gray-50/60">
+                <tr key={prop.id} className="group transition-colors hover:bg-gray-50/60 dark:hover:bg-white/5">
                   {/* Name */}
                   <td className="px-5 py-4">
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">{prop.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{prop.name}</span>
                       <span className="mt-0.5 text-[11px] text-gray-400">
                         {prop.city}, {prop.state}
                         {prop.active_special && (
@@ -501,7 +501,7 @@ export default function PropertiesPage() {
             </div>
           )}
 
-          <div className="border-t border-gray-50 px-5 py-3 text-[11px] text-gray-400">
+          <div className="border-t border-gray-50 px-5 py-3 text-[11px] text-gray-400 dark:border-white/5 dark:text-gray-500">
             Showing {filtered.length} of {enriched.length} properties
           </div>
         </Card>
@@ -538,7 +538,7 @@ export default function PropertiesPage() {
                 </div>
 
                 {/* Metrics grid */}
-                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-gray-50 pt-4">
+                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-gray-50 pt-4 dark:border-white/5">
                   {[
                     { label: "Leads / wk",  value: prop.leads_this_week },
                     { label: "Tour Rate",   value: `${prop.tourRate}%`,  color: prop.tourRate >= 30 ? "text-green-600" : prop.tourRate < 15 ? "text-red-500" : undefined },
@@ -560,7 +560,7 @@ export default function PropertiesPage() {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between border-t border-gray-50 px-5 py-3">
+              <div className="flex items-center justify-between border-t border-gray-50 px-5 py-3 dark:border-white/5">
                 <Link
                   href={`/leads?property=${prop.id}`}
                   className="text-xs font-medium text-gray-500 transition-colors hover:text-gray-800"

@@ -151,7 +151,7 @@ const ISSUE_STYLES: Record<Issue["type"], { bar: string; icon: string; badge: st
 
 function MetricCell({ label, value, good, benchmark }: { label: string; value: string; good: boolean; benchmark: string }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+    <div className="flex flex-col gap-0.5 rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-white/5 dark:bg-[#1C1F2E]">
       <p className="text-[11px] font-medium text-gray-400">{label}</p>
       <p className={cn("mt-1 text-2xl font-bold", good ? "text-gray-900" : "text-red-500")}>{value}</p>
       <p className={cn("mt-0.5 text-[11px]", good ? "text-green-600" : "text-gray-400")}>
@@ -189,7 +189,7 @@ export default function PropertyDetailPage() {
           {/* Identity */}
           <div className="flex-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{PROPERTY.name}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{PROPERTY.name}</h1>
               <span className="rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700">
                 Active
               </span>
@@ -217,7 +217,7 @@ export default function PropertyDetailPage() {
               { label: "Avg Rent",       value: `$${PROPERTY.avg_rent.toLocaleString()}` },
               { label: "AI Number",      value: PROPERTY.ai_number,  mono: true },
             ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-gray-100 bg-white px-4 py-2.5 shadow-sm">
+              <div key={s.label} className="rounded-xl border border-gray-100 bg-white px-4 py-2.5 shadow-sm dark:border-white/5 dark:bg-[#1C1F2E]">
                 <p className="text-[10px] font-medium text-gray-400">{s.label}</p>
                 <p className={cn("mt-0.5 text-sm font-bold text-gray-900", s.valueClass, s.mono && "font-mono")}>
                   {s.value}
@@ -230,13 +230,13 @@ export default function PropertyDetailPage() {
           <div className="flex items-center gap-2">
             <Link
               href={`/leads?property=${PROPERTY.id}`}
-              className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
             >
               View Leads
             </Link>
             <Link
               href="/calendar"
-              className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              className="rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
             >
               Calendar
             </Link>
@@ -306,7 +306,7 @@ export default function PropertyDetailPage() {
         <Card padding="none">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100">
+              <tr className="border-b border-gray-100 dark:border-white/5">
                 {["Source", "Leads", "Tours", "Tour Rate", "Apps", "Move-ins", "Conv. Rate", "CPL"].map((h) => (
                   <th
                     key={h}
@@ -392,7 +392,7 @@ export default function PropertyDetailPage() {
           {ISSUES.map((issue, i) => {
             const s = ISSUE_STYLES[issue.type];
             return (
-              <div key={i} className="relative flex gap-4 overflow-hidden rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+              <div key={i} className="relative flex gap-4 overflow-hidden rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#1C1F2E]">
                 <div className={cn("absolute bottom-0 left-0 top-0 w-1", s.bar)} />
                 <div className="ml-3 flex-1">
                   <div className="flex items-start justify-between gap-4">

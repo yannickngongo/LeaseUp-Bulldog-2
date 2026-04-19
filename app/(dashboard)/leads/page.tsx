@@ -303,8 +303,8 @@ function ScoreBar({ score }: { score: number }) {
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5">
-      <span className="shrink-0 text-xs text-gray-400">{label}</span>
-      <span className="text-right text-xs font-medium text-gray-800">{value ?? "—"}</span>
+      <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">{label}</span>
+      <span className="text-right text-xs font-medium text-gray-800 dark:text-gray-200">{value ?? "—"}</span>
     </div>
   );
 }
@@ -336,10 +336,10 @@ function LeadListPanel({
   );
 
   return (
-    <div className="flex w-[280px] shrink-0 flex-col border-r border-gray-100 bg-white">
+    <div className="flex w-full shrink-0 flex-col border-r border-gray-100 bg-white sm:w-[280px] dark:border-white/5 dark:bg-[#12141E]">
       {/* Search */}
-      <div className="border-b border-gray-100 p-3">
-        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+      <div className="border-b border-gray-100 p-3 dark:border-white/5">
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-white/10 dark:bg-white/5">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-3.5 w-3.5 shrink-0 text-gray-400">
             <circle cx="7" cy="7" r="4.5" />
             <path d="M10.5 10.5l3 3" strokeLinecap="round" />
@@ -349,13 +349,13 @@ function LeadListPanel({
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search leads…"
-            className="flex-1 bg-transparent text-xs text-gray-700 placeholder-gray-400 focus:outline-none"
+            className="flex-1 bg-transparent text-xs text-gray-700 placeholder-gray-400 focus:outline-none dark:text-gray-300"
           />
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-1 overflow-x-auto border-b border-gray-100 px-3 py-2 scrollbar-hide">
+      <div className="flex gap-1 overflow-x-auto border-b border-gray-100 px-3 py-2 scrollbar-hide dark:border-white/5">
         {FILTERS.map((f) => {
           const count = applyFilter(leads, f.key).length;
           return (
@@ -366,7 +366,7 @@ function LeadListPanel({
                 "flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
                 filter === f.key
                   ? "bg-[#C8102E] text-white"
-                  : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:bg-white/5 dark:text-gray-400 dark:hover:bg-white/10 dark:hover:text-gray-200"
               )}
             >
               {f.label}
@@ -400,10 +400,10 @@ function LeadListPanel({
                 key={lead.id}
                 onClick={() => onSelect(lead.id)}
                 className={cn(
-                  "w-full border-b border-gray-50 px-3 py-3 text-left transition-colors",
+                  "w-full border-b border-gray-50 px-3 py-3 text-left transition-colors dark:border-white/5",
                   isSelected
-                    ? "border-l-2 border-l-[#C8102E] bg-red-50 pl-2.5"
-                    : "hover:bg-gray-50"
+                    ? "border-l-2 border-l-[#C8102E] bg-red-50 pl-2.5 dark:bg-[#C8102E]/10"
+                    : "hover:bg-gray-50 dark:hover:bg-white/5"
                 )}
               >
                 <div className="flex items-start gap-2.5">
@@ -486,10 +486,10 @@ function ConversationPanel({ lead, replyText, onReplyChange }: {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50">
+    <div className="flex flex-1 flex-col overflow-hidden bg-gray-50 dark:bg-[#0D0F17]">
 
       {/* Conversation header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-5 py-3">
+      <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-5 py-3 dark:border-white/5 dark:bg-[#12141E]">
         <div className="flex items-center gap-3">
           <div
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold"
@@ -499,18 +499,18 @@ function ConversationPanel({ lead, replyText, onReplyChange }: {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-900">{lead.name}</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{lead.name}</span>
               <StatusPill status={lead.status} />
             </div>
-            <p className="text-xs text-gray-400">{lead.phone} · {lead.property}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{lead.phone} · {lead.property}</p>
           </div>
         </div>
 
         {/* Header actions */}
         <div className="flex items-center gap-2">
           {lead.ai_score != null && (
-            <div className="flex items-center gap-1.5 rounded-lg border border-gray-100 bg-gray-50 px-2.5 py-1.5">
-              <span className="text-[10px] text-gray-400">AI Score</span>
+            <div className="flex items-center gap-1.5 rounded-lg border border-gray-100 bg-gray-50 px-2.5 py-1.5 dark:border-white/5 dark:bg-white/5">
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">AI Score</span>
               <span className={cn(
                 "text-xs font-bold",
                 lead.ai_score >= 7 ? "text-green-600" : lead.ai_score >= 4 ? "text-amber-600" : "text-red-500"
@@ -519,10 +519,10 @@ function ConversationPanel({ lead, replyText, onReplyChange }: {
               </span>
             </div>
           )}
-          <button className="rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-[11px] font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+          <button className="rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-white/5 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10">
             View Profile
           </button>
-          <button className="rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-[11px] font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+          <button className="rounded-lg border border-gray-100 bg-white px-3 py-1.5 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-white/5 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10">
             ···
           </button>
         </div>
@@ -560,8 +560,8 @@ function ConversationPanel({ lead, replyText, onReplyChange }: {
                         <div className={cn(
                           "rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
                           isOut
-                            ? "rounded-tr-sm bg-gray-900 text-white"
-                            : "rounded-tl-sm border border-gray-100 bg-white text-gray-900 shadow-sm"
+                            ? "rounded-tr-sm bg-gray-900 text-white dark:bg-[#C8102E]/80"
+                            : "rounded-tl-sm border border-gray-100 bg-white text-gray-900 shadow-sm dark:border-white/5 dark:bg-[#1C1F2E] dark:text-gray-100"
                         )}>
                           {msg.body}
                         </div>
@@ -587,10 +587,10 @@ function ConversationPanel({ lead, replyText, onReplyChange }: {
       </div>
 
       {/* Reply box */}
-      <div className="shrink-0 border-t border-gray-100 bg-white">
+      <div className="shrink-0 border-t border-gray-100 bg-white dark:border-white/5 dark:bg-[#12141E]">
         {/* Quick action chips */}
-        <div className="flex items-center gap-2 border-b border-gray-50 px-4 py-2">
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">Quick actions</span>
+        <div className="flex items-center gap-2 border-b border-gray-50 px-4 py-2 dark:border-white/5">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Quick actions</span>
           <button className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:bg-gray-100 transition-colors">
             <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-3 w-3">
               <rect x="1" y="2" width="12" height="11" rx="1.5" />
@@ -634,7 +634,7 @@ function ConversationPanel({ lead, replyText, onReplyChange }: {
             onChange={(e) => onReplyChange(e.target.value)}
             placeholder="Type a reply or edit the AI draft above…"
             rows={3}
-            className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none transition-colors"
+            className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 transition-colors focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:focus:bg-white/10"
           />
           <div className="mt-2.5 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -672,11 +672,11 @@ function LeadDetailPanel({ lead }: { lead: Lead }) {
   const st = STATUS_STYLES[lead.status];
 
   return (
-    <div className="flex w-[300px] shrink-0 flex-col overflow-y-auto border-l border-gray-100 bg-white">
+    <div className="flex w-[300px] shrink-0 flex-col overflow-y-auto border-l border-gray-100 bg-white dark:border-white/5 dark:bg-[#12141E]">
 
       {/* Status */}
-      <div className="border-b border-gray-100 p-4">
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Lead Status</p>
+      <div className="border-b border-gray-100 p-4 dark:border-white/5">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Lead Status</p>
         <div className="flex items-center justify-between">
           <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold", st.bg, st.text)}>
             <span className={cn("h-1.5 w-1.5 rounded-full", st.dot)} />
@@ -699,9 +699,9 @@ function LeadDetailPanel({ lead }: { lead: Lead }) {
       </div>
 
       {/* Contact info */}
-      <div className="border-b border-gray-100 px-4 py-3">
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">Contact</p>
-        <div className="divide-y divide-gray-50">
+      <div className="border-b border-gray-100 px-4 py-3 dark:border-white/5">
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Contact</p>
+        <div className="divide-y divide-gray-50 dark:divide-white/5">
           <DetailRow label="Phone" value={
             <a href={`tel:${lead.phone}`} className="text-[#C8102E] hover:underline">{lead.phone}</a>
           } />
@@ -757,16 +757,16 @@ function LeadDetailPanel({ lead }: { lead: Lead }) {
           defaultValue={lead.notes ?? ""}
           placeholder="Add a private note…"
           rows={4}
-          className="w-full resize-none rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-xs text-gray-700 placeholder-gray-400 focus:border-gray-200 focus:bg-white focus:outline-none transition-colors"
+          className="w-full resize-none rounded-lg border border-gray-100 bg-gray-50 px-3 py-2.5 text-xs text-gray-700 placeholder-gray-400 transition-colors focus:border-gray-200 focus:bg-white focus:outline-none dark:border-white/5 dark:bg-white/5 dark:text-gray-300 dark:focus:bg-white/10"
         />
-        <button className="mt-2 w-full rounded-lg bg-gray-100 py-1.5 text-[11px] font-medium text-gray-600 hover:bg-gray-200 transition-colors">
+        <button className="mt-2 w-full rounded-lg bg-gray-100 py-1.5 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-200 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10">
           Save Note
         </button>
       </div>
 
       {/* Danger actions */}
-      <div className="border-t border-gray-100 p-4 space-y-1.5">
-        <button className="w-full rounded-lg border border-gray-100 py-2 text-[11px] font-medium text-gray-500 hover:bg-gray-50 transition-colors">
+      <div className="border-t border-gray-100 p-4 space-y-1.5 dark:border-white/5">
+        <button className="w-full rounded-lg border border-gray-100 py-2 text-[11px] font-medium text-gray-500 transition-colors hover:bg-gray-50 dark:border-white/5 dark:text-gray-400 dark:hover:bg-white/5">
           Unsubscribe Lead
         </button>
         <button className="w-full rounded-lg border border-red-100 py-2 text-[11px] font-medium text-red-400 hover:bg-red-50 transition-colors">
@@ -806,12 +806,16 @@ export default function LeadsPage() {
         onFilterChange={setFilter}
         onSearchChange={setSearch}
       />
-      <ConversationPanel
-        lead={selectedLead}
-        replyText={replyText}
-        onReplyChange={setReplyText}
-      />
-      <LeadDetailPanel lead={selectedLead} />
+      <div className="hidden flex-1 sm:flex">
+        <ConversationPanel
+          lead={selectedLead}
+          replyText={replyText}
+          onReplyChange={setReplyText}
+        />
+      </div>
+      <div className="hidden xl:flex">
+        <LeadDetailPanel lead={selectedLead} />
+      </div>
     </div>
   );
 }

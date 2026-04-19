@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 interface Trend {
   direction: "up" | "down" | "flat";
   label: string;
-  positive?: boolean; // true = up is good, false = up is bad (e.g. vacancy rate)
+  positive?: boolean;
 }
 
 interface KpiCardProps {
@@ -25,19 +25,19 @@ export function KpiCard({ label, value, trend, sub, stub, icon }: KpiCardProps) 
     : "";
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#1C1F2E]">
       <div className="flex items-start justify-between">
-        <p className="text-xs font-medium text-gray-500">{label}</p>
-        {icon && <div className="text-gray-400">{icon}</div>}
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
+        {icon && <div className="text-gray-400 dark:text-gray-500">{icon}</div>}
       </div>
 
-      <p className={cn("mt-2 text-2xl font-bold tracking-tight", stub ? "text-gray-300" : "text-gray-900")}>
+      <p className={cn("mt-2 text-2xl font-bold tracking-tight", stub ? "text-gray-300 dark:text-gray-600" : "text-gray-900 dark:text-gray-100")}>
         {value}
       </p>
 
       <div className="mt-1.5 flex flex-wrap items-center gap-2">
         {stub && (
-          <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600">
+          <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
             needs wiring
           </span>
         )}
@@ -57,7 +57,7 @@ export function KpiCard({ label, value, trend, sub, stub, icon }: KpiCardProps) 
             {trend.label}
           </span>
         )}
-        {sub && <p className="text-xs text-gray-400">{sub}</p>}
+        {sub && <p className="text-xs text-gray-400 dark:text-gray-500">{sub}</p>}
       </div>
     </div>
   );

@@ -45,15 +45,15 @@ const URGENCY_DOT: Record<"high" | "medium" | "low", string> = {
 };
 
 const URGENCY_AGE_STYLE: Record<"high" | "medium" | "low", string> = {
-  high:   "bg-red-50 text-red-600",
-  medium: "bg-amber-50 text-amber-700",
-  low:    "bg-gray-100 text-gray-500",
+  high:   "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+  medium: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  low:    "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
 };
 
 const ACTOR_LABEL: Record<string, string> = {
-  AI:     "bg-violet-50 text-violet-700",
-  Lead:   "bg-blue-50 text-blue-700",
-  System: "bg-gray-100 text-gray-500",
+  AI:     "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
+  Lead:   "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  System: "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
 };
 
 // ─── DonutChart ───────────────────────────────────────────────────────────────
@@ -88,8 +88,7 @@ function DonutChart({ segments }: { segments: typeof DONUT_SEGMENTS }) {
           />
         ))}
       </g>
-      {/* Center text */}
-      <text x="50" y="46" textAnchor="middle" className="text-[14px] font-bold fill-gray-900" style={{ fontSize: 14, fontWeight: 700, fill: "#111827" }}>88%</text>
+      <text x="50" y="46" textAnchor="middle" style={{ fontSize: 14, fontWeight: 700, fill: "#111827" }} className="dark:[fill:#F9FAFB]">88%</text>
       <text x="50" y="58" textAnchor="middle" style={{ fontSize: 7, fill: "#9CA3AF" }}>occupied</text>
     </svg>
   );
@@ -102,16 +101,16 @@ export default function DashboardPage() {
   const totalUnits = DONUT_SEGMENTS.reduce((a, s) => a + s.units, 0);
 
   return (
-    <div className="space-y-5 p-6">
+    <div className="space-y-5 p-4 lg:p-6">
 
       {/* ── Greeting ────────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Good morning, Marcus.</h1>
-        <p className="mt-0.5 text-sm text-gray-400">{today} · 6 properties · 24 active leads</p>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Good morning, Marcus.</h1>
+        <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">{today} · 6 properties · 24 active leads</p>
       </div>
 
       {/* ── KPI strip ───────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           {
             label: "Portfolio Occupancy",
@@ -119,8 +118,8 @@ export default function DashboardPage() {
             sub: "106 / 120 units filled",
             trend: "+1.4pts this month",
             trendUp: true,
-            accent: "bg-green-50",
-            accentText: "text-green-600",
+            accent: "bg-green-50 dark:bg-green-900/20",
+            accentText: "text-green-600 dark:text-green-400",
           },
           {
             label: "Active Leads",
@@ -128,8 +127,8 @@ export default function DashboardPage() {
             sub: "across 6 properties",
             trend: "+3 vs last week",
             trendUp: true,
-            accent: "bg-indigo-50",
-            accentText: "text-indigo-600",
+            accent: "bg-indigo-50 dark:bg-indigo-900/20",
+            accentText: "text-indigo-600 dark:text-indigo-400",
           },
           {
             label: "Tours This Week",
@@ -137,8 +136,8 @@ export default function DashboardPage() {
             sub: "3 confirmed · 2 pending",
             trend: "+2 from last week",
             trendUp: true,
-            accent: "bg-amber-50",
-            accentText: "text-amber-600",
+            accent: "bg-amber-50 dark:bg-amber-900/20",
+            accentText: "text-amber-600 dark:text-amber-400",
           },
           {
             label: "Avg. Response Time",
@@ -146,17 +145,17 @@ export default function DashboardPage() {
             sub: "AI-powered · all properties",
             trend: "↓ 63% vs last month",
             trendUp: true,
-            accent: "bg-violet-50",
-            accentText: "text-violet-600",
+            accent: "bg-violet-50 dark:bg-violet-900/20",
+            accentText: "text-violet-600 dark:text-violet-400",
           },
         ].map((k) => (
           <div
             key={k.label}
-            className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)]"
+            className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]"
           >
-            <p className="text-xs font-medium text-gray-400">{k.label}</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900">{k.value}</p>
-            <p className="mt-0.5 text-[11px] text-gray-400">{k.sub}</p>
+            <p className="text-xs font-medium text-gray-400 dark:text-gray-500">{k.label}</p>
+            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{k.value}</p>
+            <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{k.sub}</p>
             <div className="mt-3">
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${k.accent} ${k.accentText}`}>
                 {k.trendUp ? "↑" : "↓"} {k.trend}
@@ -167,35 +166,35 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Main grid ───────────────────────────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_260px_280px]">
+      <div className="grid gap-4 lg:grid-cols-[1fr_260px_280px] xl:grid-cols-[1fr_260px_280px]">
 
         {/* Needs Attention */}
-        <div className="rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
-          <div className="flex items-center justify-between border-b border-gray-50 px-6 py-4">
+        <div className="rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
+          <div className="flex items-center justify-between border-b border-gray-50 px-6 py-4 dark:border-white/5">
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Needs Attention</h3>
-              <p className="mt-0.5 text-xs text-gray-400">Leads requiring action now</p>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Needs Attention</h3>
+              <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Leads requiring action now</p>
             </div>
             <Link href="/leads" className="text-xs font-medium text-[#C8102E] hover:underline">
               View all →
             </Link>
           </div>
 
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-white/5">
             {ATTENTION_ITEMS.map((item) => (
               <Link
                 key={item.id}
                 href={`/leads`}
-                className="flex items-start gap-4 px-6 py-4 transition-colors hover:bg-gray-50/60"
+                className="flex items-start gap-4 px-6 py-4 transition-colors hover:bg-gray-50/60 dark:hover:bg-white/5"
               >
                 <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${URGENCY_DOT[item.urgency]}`} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-900">{item.name}</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{item.name}</span>
                     <StatusBadge status={item.status} />
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-500">{item.issue}</p>
-                  <p className="mt-0.5 text-[10px] text-gray-400">{item.property}</p>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{item.issue}</p>
+                  <p className="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">{item.property}</p>
                 </div>
                 <span className={`shrink-0 self-start rounded-full px-2 py-0.5 text-[10px] font-semibold ${URGENCY_AGE_STYLE[item.urgency]}`}>
                   {item.age}
@@ -206,9 +205,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Portfolio Occupancy Ring */}
-        <div className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+        <div className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900">Portfolio Occupancy</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Portfolio Occupancy</h3>
           </div>
 
           <div className="mx-auto h-[140px] w-[140px]">
@@ -220,30 +219,30 @@ export default function DashboardPage() {
               <div key={seg.label} className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: seg.color }} />
-                  <span className="text-[11px] text-gray-500 truncate max-w-[110px]">{seg.label}</span>
+                  <span className="text-[11px] text-gray-500 truncate max-w-[110px] dark:text-gray-400">{seg.label}</span>
                 </div>
-                <span className="text-[11px] font-semibold text-gray-700">{seg.units}</span>
+                <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">{seg.units}</span>
               </div>
             ))}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-gray-200" />
-                <span className="text-[11px] text-gray-400">Vacant</span>
+                <span className="h-2 w-2 rounded-full bg-gray-200 dark:bg-gray-600" />
+                <span className="text-[11px] text-gray-400 dark:text-gray-500">Vacant</span>
               </div>
-              <span className="text-[11px] font-semibold text-gray-400">
+              <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">
                 {DONUT_SEGMENTS.find((s) => s.label === "Vacant")?.units}
               </span>
             </div>
-            <p className="pt-1 text-[10px] text-gray-300">{totalUnits} total units across 6 properties</p>
+            <p className="pt-1 text-[10px] text-gray-300 dark:text-gray-600">{totalUnits} total units across 6 properties</p>
           </div>
         </div>
 
         {/* Pipeline + Activity */}
         <div className="flex flex-col gap-4">
           {/* Pipeline */}
-          <div className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
+          <div className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">Pipeline</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Pipeline</h3>
               <Link href="/leads" className="text-[11px] font-medium text-[#C8102E] hover:underline">
                 Open →
               </Link>
@@ -252,10 +251,10 @@ export default function DashboardPage() {
               {PIPELINE_STAGES.map((s) => (
                 <div key={s.label}>
                   <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500">{s.label}</span>
-                    <span className="text-[11px] font-bold tabular-nums text-gray-900">{s.count}</span>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400">{s.label}</span>
+                    <span className="text-[11px] font-bold tabular-nums text-gray-900 dark:text-gray-100">{s.count}</span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-white/5">
                     <div className={`h-full rounded-full ${s.color}`} style={{ width: `${s.pct}%` }} />
                   </div>
                 </div>
@@ -264,19 +263,19 @@ export default function DashboardPage() {
           </div>
 
           {/* Recent Activity */}
-          <div className="flex-1 rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)]">
-            <h3 className="mb-3 text-sm font-semibold text-gray-900">Recent Activity</h3>
+          <div className="flex-1 rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
+            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h3>
             <div className="space-y-3">
               {ACTIVITY.map((item) => (
                 <div key={item.id} className="flex items-start gap-2.5">
                   <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${item.dot}`} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs leading-relaxed text-gray-700">{item.text}</p>
+                    <p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">{item.text}</p>
                     <div className="mt-0.5 flex items-center gap-1.5">
-                      <span className={`rounded px-1 py-0.5 text-[9px] font-semibold ${ACTOR_LABEL[item.actor] ?? "bg-gray-100 text-gray-500"}`}>
+                      <span className={`rounded px-1 py-0.5 text-[9px] font-semibold ${ACTOR_LABEL[item.actor] ?? "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"}`}>
                         {item.actor}
                       </span>
-                      <span className="text-[10px] text-gray-400">{item.time}</span>
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500">{item.time}</span>
                     </div>
                   </div>
                 </div>

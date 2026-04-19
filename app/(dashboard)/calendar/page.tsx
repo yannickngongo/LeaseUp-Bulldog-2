@@ -85,17 +85,17 @@ export default function CalendarPage() {
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Tour Calendar</h1>
-          <p className="mt-0.5 text-sm text-gray-500">Week of April 20 – 26, 2026</p>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Tour Calendar</h1>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Week of April 20 – 26, 2026</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50">
+          <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10">
             ← Prev
           </button>
-          <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50">
+          <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:bg-white/10">
             Today
           </button>
-          <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50">
+          <button className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10">
             Next →
           </button>
         </div>
@@ -106,7 +106,7 @@ export default function CalendarPage() {
         <select
           value={propertyFilter}
           onChange={(e) => setPropertyFilter(e.target.value)}
-          className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 focus:border-gray-400 focus:outline-none"
+          className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-300"
         >
           {PROPERTIES.map((p) => <option key={p}>{p}</option>)}
         </select>
@@ -119,8 +119,8 @@ export default function CalendarPage() {
               className={cn(
                 "rounded-full px-3 py-1.5 text-xs font-medium transition-colors capitalize",
                 statusFilter === f.key
-                  ? "bg-gray-900 text-white"
-                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                  ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
               )}
             >
               {f.label}
@@ -129,19 +129,19 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_288px]">
+      <div className="grid gap-5 xl:grid-cols-[1fr_288px]">
 
         {/* ── Week grid ────────────────────────────────────────────────── */}
         <Card padding="none">
           {/* Day headers */}
-          <div className="grid grid-cols-7 border-b border-gray-100">
+          <div className="grid grid-cols-7 border-b border-gray-100 dark:border-white/5">
             {DAY_LABELS.map((day, i) => {
               const isToday = i === TODAY_IDX;
               const count = filtered.filter((t) => t.day === i).length;
               return (
-                <div key={day} className={cn("py-3 text-center", isToday && "bg-red-50/60")}>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{day}</p>
-                  <p className={cn("mt-0.5 text-sm font-semibold", isToday ? "text-[#C8102E]" : "text-gray-700")}>
+                <div key={day} className={cn("py-3 text-center", isToday && "bg-red-50/60 dark:bg-[#C8102E]/10")}>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">{day}</p>
+                  <p className={cn("mt-0.5 text-sm font-semibold", isToday ? "text-[#C8102E]" : "text-gray-700 dark:text-gray-300")}>
                     {WEEK_DATES[i].split(" ")[1]}
                   </p>
                   {count > 0 && (
@@ -158,7 +158,7 @@ export default function CalendarPage() {
           </div>
 
           {/* Tour slots */}
-          <div className="grid min-h-[400px] grid-cols-7 divide-x divide-gray-50">
+          <div className="grid min-h-[400px] grid-cols-7 divide-x divide-gray-50 dark:divide-white/5">
             {DAY_LABELS.map((_, colIdx) => {
               const dayTours = filtered
                 .filter((t) => t.day === colIdx)

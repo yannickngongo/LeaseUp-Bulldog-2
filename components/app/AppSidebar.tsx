@@ -94,18 +94,19 @@ const NAV_SECONDARY: NavItem[] = [
 
 // ─── NavLink ──────────────────────────────────────────────────────────────────
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active, onClose }: { item: NavItem; active: boolean; onClose?: () => void }) {
   return (
     <Link
       href={item.href}
+      onClick={onClose}
       className={cn(
         "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
         active
-          ? "bg-zinc-100 font-medium text-gray-900"
-          : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+          ? "bg-zinc-100 font-medium text-gray-900 dark:bg-white/10 dark:text-gray-100"
+          : "text-gray-500 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
       )}
     >
-      <span className={cn("transition-colors", active ? "text-[#C8102E]" : "text-gray-400 group-hover:text-gray-500")}>
+      <span className={cn("transition-colors", active ? "text-[#C8102E]" : "text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300")}>
         {item.icon}
       </span>
       <span className="flex-1">{item.label}</span>
@@ -120,7 +121,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 
 function NavGroupLabel({ label }: { label: string }) {
   return (
-    <p className="mb-1 mt-5 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+    <p className="mb-1 mt-5 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-600">
       {label}
     </p>
   );
@@ -128,7 +129,7 @@ function NavGroupLabel({ label }: { label: string }) {
 
 // ─── AppSidebar ───────────────────────────────────────────────────────────────
 
-export function AppSidebar() {
+export function AppSidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
 
   function isActive(href: string) {
@@ -137,25 +138,25 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className="flex w-[240px] shrink-0 flex-col border-r border-gray-100 bg-white">
+    <aside className="flex w-[240px] shrink-0 flex-col border-r border-gray-100 bg-white dark:border-white/5 dark:bg-[#12141E]">
 
-      {/* Logo — exactly 56px to match header */}
-      <div className="flex h-14 shrink-0 items-center border-b border-gray-100 px-4">
-        <Link href="/" className="text-[15px] font-bold tracking-tight text-gray-900">
+      {/* Logo */}
+      <div className="flex h-14 shrink-0 items-center border-b border-gray-100 px-4 dark:border-white/5">
+        <Link href="/" className="text-[15px] font-bold tracking-tight text-gray-900 dark:text-gray-100">
           LeaseUp<span className="text-[#C8102E]">Bulldog</span>
         </Link>
       </div>
 
       {/* Property selector */}
       <div className="px-3 pt-4">
-        <button className="flex w-full items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-left transition-colors hover:bg-gray-100">
+        <button className="flex w-full items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-left transition-colors hover:bg-gray-100 dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10">
           <div className="flex items-center gap-2.5">
             <span className="flex h-5 w-5 items-center justify-center rounded bg-[#C8102E]/10 text-[10px] font-bold text-[#C8102E]">
               A
             </span>
-            <span className="text-xs font-medium text-gray-700">All Properties</span>
+            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">All Properties</span>
           </div>
-          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-3 w-3 text-gray-400">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-3 w-3 text-gray-400 dark:text-gray-500">
             <path d="M2 4l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
@@ -165,7 +166,7 @@ export function AppSidebar() {
       <nav className="flex-1 overflow-y-auto px-3 pb-3 pt-4">
         <div className="space-y-0.5">
           {NAV_PRIMARY.map((item) => (
-            <NavLink key={item.href} item={item} active={isActive(item.href)} />
+            <NavLink key={item.href} item={item} active={isActive(item.href)} onClose={onClose} />
           ))}
         </div>
 
@@ -178,17 +179,17 @@ export function AppSidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="border-t border-gray-100 px-3 py-3 space-y-0.5">
-        <NavLink item={{ href: "/settings", label: "Settings", icon: <IconSettings /> }} active={isActive("/settings")} />
+      <div className="border-t border-gray-100 px-3 py-3 space-y-0.5 dark:border-white/5">
+        <NavLink item={{ href: "/settings", label: "Settings", icon: <IconSettings /> }} active={isActive("/settings")} onClose={onClose} />
 
         {/* User */}
         <div className="mt-2 flex items-center gap-2.5 rounded-lg px-3 py-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[11px] font-semibold text-white">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[11px] font-semibold text-white dark:bg-white/10 dark:text-gray-200">
             MT
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-medium text-gray-700">Marcus Thompson</p>
-            <p className="truncate text-[10px] text-gray-400">Growth Plan</p>
+            <p className="truncate text-xs font-medium text-gray-700 dark:text-gray-300">Marcus Thompson</p>
+            <p className="truncate text-[10px] text-gray-400 dark:text-gray-500">Growth Plan</p>
           </div>
         </div>
       </div>

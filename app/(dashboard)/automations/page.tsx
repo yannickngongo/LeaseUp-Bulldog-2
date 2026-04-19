@@ -51,7 +51,7 @@ function Toggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void 
       onClick={onToggle}
       className={cn(
         "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full p-0.5 transition-colors focus:outline-none",
-        enabled ? "bg-[#C8102E]" : "bg-gray-200"
+        enabled ? "bg-[#C8102E]" : "bg-gray-200 dark:bg-white/20"
       )}
     >
       <span
@@ -78,8 +78,8 @@ function SettingRow({
   return (
     <div className="flex items-start justify-between gap-6 py-4">
       <div className="flex-1">
-        <p className={cn("text-sm font-medium", danger ? "text-red-600" : "text-gray-900")}>{label}</p>
-        {description && <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{description}</p>}
+        <p className={cn("text-sm font-medium", danger ? "text-red-600" : "text-gray-900 dark:text-gray-100")}>{label}</p>
+        {description && <p className="mt-0.5 text-xs leading-relaxed text-gray-500 dark:text-gray-400">{description}</p>}
       </div>
       <div className="shrink-0">{children}</div>
     </div>
@@ -97,7 +97,7 @@ function NumberInput({ value, onChange, suffix, min = 1, max = 999 }: {
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-16 rounded-lg border border-gray-200 px-2.5 py-1.5 text-center text-sm font-semibold text-gray-900 focus:border-gray-400 focus:outline-none"
+        className="w-16 rounded-lg border border-gray-200 px-2.5 py-1.5 text-center text-sm font-semibold text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
       />
       <span className="text-xs text-gray-500">{suffix}</span>
     </div>
@@ -111,7 +111,7 @@ function SelectInput({ value, onChange, options }: {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 focus:border-gray-400 focus:outline-none"
+      className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-[#1C1F2E] dark:text-gray-300"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>{o.label}</option>
@@ -188,7 +188,7 @@ export default function AutomationsPage() {
     { value: "8am-8pm",  label: "8 AM – 8 PM (extended)" },
   ];
 
-  const divider = <div className="border-t border-gray-50" />;
+  const divider = <div className="border-t border-gray-50 dark:border-white/5" />;
 
   return (
     <div className="space-y-8 p-6">
@@ -196,8 +196,8 @@ export default function AutomationsPage() {
       {/* ── Page header ─────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Automation Settings</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Automation Settings</h1>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
             Configure how LUB responds to leads, follows up, and converts.
           </p>
         </div>
@@ -210,7 +210,7 @@ export default function AutomationsPage() {
       <Card>
         <div className="mb-1 flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-gray-900">Instant Response</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Instant Response</h2>
             <p className="mt-0.5 text-xs text-gray-500">
               AI replies to every new lead within seconds of creation.
             </p>
@@ -236,8 +236,8 @@ export default function AutomationsPage() {
           {divider}
           <div className="py-4">
             <p className="mb-2 text-xs font-medium text-gray-500">Tone preview</p>
-            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-              <p className="text-xs leading-relaxed text-gray-600 italic">"{TONE_PREVIEWS[tone]}"</p>
+            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 dark:border-white/5 dark:bg-white/5">
+              <p className="text-xs leading-relaxed text-gray-600 italic dark:text-gray-400">"{TONE_PREVIEWS[tone]}"</p>
             </div>
           </div>
         </div>
@@ -245,7 +245,7 @@ export default function AutomationsPage() {
 
       {/* ── 2. Follow-Up Rules ──────────────────────────────────────────── */}
       <Card>
-        <h2 className="text-sm font-semibold text-gray-900">Follow-Up Rules</h2>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Follow-Up Rules</h2>
         <p className="mt-0.5 text-xs text-gray-500">Define when and how the AI re-engages silent or stalled leads.</p>
 
         <div className="mt-4 divide-y divide-gray-50">
@@ -296,10 +296,10 @@ export default function AutomationsPage() {
           Override defaults for a specific property. Select a property to configure.
         </p>
 
-        <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
+        <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-white/5 dark:bg-white/5">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-500">Editing rules for:</span>
-            <select className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-900 focus:border-gray-400 focus:outline-none">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Editing rules for:</span>
+            <select className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-900 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-[#1C1F2E] dark:text-gray-100">
               <option>The Monroe</option>
               <option>Parkview Commons</option>
               <option>Sonoran Ridge</option>
@@ -319,7 +319,7 @@ export default function AutomationsPage() {
               value={special}
               onChange={(e) => setSpecial(e.target.value)}
               placeholder="e.g. 1 month free on 12-month leases"
-              className="w-72 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-700 focus:border-gray-400 focus:outline-none"
+              className="w-72 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-700 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-300"
             />
           </SettingRow>
           {divider}
@@ -378,8 +378,8 @@ export default function AutomationsPage() {
                 className={cn(
                   "w-full rounded-lg px-3 py-2.5 text-left transition-colors",
                   activeTemplate === t.id
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-600 hover:bg-gray-50"
+                    ? "bg-gray-900 text-white dark:bg-white/10"
+                    : "text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5"
                 )}
               >
                 <p className={cn("text-xs font-medium", activeTemplate === t.id ? "text-white" : "text-gray-900")}>
@@ -415,14 +415,14 @@ export default function AutomationsPage() {
               value={editingBody}
               onChange={(e) => { setEditingBody(e.target.value); setSaved(false); }}
               rows={7}
-              className="w-full rounded-xl border border-gray-200 p-4 text-xs leading-relaxed text-gray-700 focus:border-gray-400 focus:outline-none resize-none font-mono"
+              className="w-full rounded-xl border border-gray-200 p-4 text-xs leading-relaxed text-gray-700 focus:border-gray-400 focus:outline-none resize-none font-mono dark:border-white/10 dark:bg-white/5 dark:text-gray-300"
             />
             <div className="mt-2 flex flex-wrap gap-2">
               {["{{first_name}}", "{{property_name}}", "{{tour_time}}", "{{application_link}}", "{{property_address}}"].map((v) => (
                 <button
                   key={v}
                   onClick={() => setEditingBody((b) => b + v)}
-                  className="rounded bg-gray-100 px-2 py-0.5 font-mono text-[10px] text-gray-600 transition-colors hover:bg-gray-200"
+                  className="rounded bg-gray-100 px-2 py-0.5 font-mono text-[10px] text-gray-600 transition-colors hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20"
                 >
                   {v}
                 </button>
