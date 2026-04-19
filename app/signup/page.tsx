@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+  );
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -24,7 +26,7 @@ export default function SignupPage() {
     setError(null);
     setLoading(true);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await getSupabase().auth.signUp({
       email,
       password,
       options: {
@@ -40,7 +42,7 @@ export default function SignupPage() {
 
     // Insert operator row — service role not available client-side, use anon with RLS
     if (data.user) {
-      await supabase.from("operators").insert({
+      await getSupabase().from("operators").insert({
         id: data.user.id,
         name: `${firstName} ${lastName}`.trim(),
         email,
@@ -52,7 +54,7 @@ export default function SignupPage() {
   }
 
   async function handleGoogle() {
-    await supabase.auth.signInWithOAuth({
+    await getSupabase().auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
