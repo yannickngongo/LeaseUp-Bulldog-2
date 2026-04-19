@@ -62,6 +62,15 @@ function IconInsights() {
   );
 }
 
+function IconMarketing() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px] shrink-0">
+      <path d="M2 13V5l6-3 6 3v8l-6 3-6-3z" />
+      <path d="M8 2v14M2 9h12" />
+    </svg>
+  );
+}
+
 function IconSettings() {
   return (
     <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px] shrink-0">
@@ -89,6 +98,7 @@ const NAV_PRIMARY: NavItem[] = [
 const NAV_SECONDARY: NavItem[] = [
   { href: "/calendar",     label: "Calendar",     icon: <IconCalendar /> },
   { href: "/automations",  label: "Automations",  icon: <IconAutomations /> },
+  { href: "/marketing",    label: "Marketing",    icon: <IconMarketing />, badge: 1 },
   { href: "/insights",     label: "Insights",     icon: <IconInsights /> },
 ];
 
