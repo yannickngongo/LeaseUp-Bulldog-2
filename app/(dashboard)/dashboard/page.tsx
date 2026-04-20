@@ -1,228 +1,267 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { StatusBadge } from "@/components/ui/Badge";
-import type { LeadStatus } from "@/lib/types";
+import { createClient } from "@supabase/supabase-js";
 import IntelligenceSection from "./IntelligenceSection";
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const ATTENTION_ITEMS = [
-  { id: "1", name: "Jordan Ellis",   property: "The Monroe",       issue: "New lead from Zillow — AI reply pending",       age: "47m ago",  urgency: "high"   as const, status: "new"            as LeadStatus },
-  { id: "2", name: "Maya Thompson",  property: "The Monroe",       issue: "No reply in 4 days — follow-up overdue",        age: "4d ago",   urgency: "high"   as const, status: "contacted"      as LeadStatus },
-  { id: "3", name: "Carlos Reyes",   property: "Parkview Commons", issue: "Tour tomorrow at 10:00 AM — unconfirmed",       age: "Tomorrow", urgency: "medium" as const, status: "tour_scheduled" as LeadStatus },
-  { id: "4", name: "Aisha Patel",    property: "Parkview Commons", issue: "App started 6 days ago — step 2 of 4 stalled",  age: "6d ago",   urgency: "medium" as const, status: "applied"        as LeadStatus },
-  { id: "5", name: "Derek Nguyen",   property: "The Monroe",       issue: "3 AI follow-ups sent — no engagement",          age: "11d ago",  urgency: "low"    as const, status: "engaged"        as LeadStatus },
-];
-
-const PIPELINE_STAGES = [
-  { label: "New",            count: 12, color: "bg-indigo-400",  pct: 100 },
-  { label: "Contacted",      count:  8, color: "bg-sky-400",     pct: 67  },
-  { label: "Engaged",        count:  6, color: "bg-violet-400",  pct: 50  },
-  { label: "Tour Scheduled", count:  4, color: "bg-amber-400",   pct: 33  },
-  { label: "Applied",        count:  2, color: "bg-orange-400",  pct: 17  },
-];
-
-const ACTIVITY = [
-  { id: "a1", time: "12m ago", actor: "AI",     text: "First reply sent to Jordan Ellis in 58s",         dot: "bg-violet-400" },
-  { id: "a2", time: "34m ago", actor: "Lead",   text: "Carlos Reyes confirmed tour: Apr 21 · 10 AM",     dot: "bg-blue-400" },
-  { id: "a3", time: "2h ago",  actor: "Lead",   text: "Maya Thompson: \"Is the 2BR still available?\"",  dot: "bg-blue-400" },
-  { id: "a4", time: "3h ago",  actor: "System", text: "Inbound lead: Sofia Ruiz via Zillow — The Monroe", dot: "bg-gray-300" },
-  { id: "a5", time: "5h ago",  actor: "AI",     text: "Day 3 follow-up sent to 4 leads across 2 properties", dot: "bg-violet-400" },
-];
-
-const DONUT_SEGMENTS = [
-  { label: "Creekside at Summerlin", units: 91,  color: "#22C55E" },
-  { label: "Sonoran Ridge",          units: 109, color: "#06B6D4" },
-  { label: "The Monroe",             units: 43,  color: "#6366F1" },
-  { label: "Parkview Commons",       units: 63,  color: "#8B5CF6" },
-  { label: "Desert Bloom",           units: 37,  color: "#F59E0B" },
-  { label: "Vista on 5th",           units: 41,  color: "#F97316" },
-  { label: "Vacant",                 units: 70,  color: "#E5E7EB" },
-];
-
-const URGENCY_DOT: Record<"high" | "medium" | "low", string> = {
-  high:   "bg-red-400",
-  medium: "bg-amber-400",
-  low:    "bg-gray-300",
-};
-
-const URGENCY_AGE_STYLE: Record<"high" | "medium" | "low", string> = {
-  high:   "bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-  medium: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  low:    "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
-};
-
-const ACTOR_LABEL: Record<string, string> = {
-  AI:     "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300",
-  Lead:   "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  System: "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400",
-};
-
-// ─── DonutChart ───────────────────────────────────────────────────────────────
-
-function DonutChart({ segments }: { segments: typeof DONUT_SEGMENTS }) {
-  const cx = 50, cy = 50, r = 36, sw = 11;
-  const circ = 2 * Math.PI * r;
-  const total = segments.reduce((a, s) => a + s.units, 0);
-  const gap = 1.8;
-  let offset = 0;
-  const draws = segments.map((seg) => {
-    const len = (seg.units / total) * circ - gap;
-    const dash = offset;
-    offset += (seg.units / total) * circ;
-    return { ...seg, len, dash };
-  });
-  return (
-    <svg viewBox="0 0 100 100" className="h-full w-full">
-      <g transform="rotate(-90 50 50)">
-        {draws.map((s, i) => (
-          <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={s.color} strokeWidth={sw}
-            strokeDasharray={`${Math.max(s.len, 0)} ${circ}`} strokeDashoffset={-s.dash} strokeLinecap="butt" />
-        ))}
-      </g>
-      <text x="50" y="46" textAnchor="middle" style={{ fontSize: 14, fontWeight: 700, fill: "#111827" }} className="dark:[fill:#F9FAFB]">88%</text>
-      <text x="50" y="58" textAnchor="middle" style={{ fontSize: 7, fill: "#9CA3AF" }}>occupied</text>
-    </svg>
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
   );
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type LeadStatus = "new" | "contacted" | "engaged" | "tour_scheduled" | "applied" | "won" | "lost";
+
+interface Lead {
+  id: string;
+  name: string;
+  status: LeadStatus;
+  property_name?: string;
+  created_at: string;
+  last_contacted_at?: string;
+  follow_up_at?: string;
+}
+
+interface ActivityItem {
+  id: string;
+  created_at: string;
+  action: string;
+  actor: "system" | "ai" | "agent";
+  metadata?: Record<string, unknown>;
+}
+
+interface Operator {
+  id: string;
+  name: string;
+}
+
+interface Property {
+  id: string;
+  name: string;
+  phone_number: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins < 1)   return "just now";
+  if (mins < 60)  return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7)   return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatAction(action: string, actor: string, meta?: Record<string, unknown>): string {
+  switch (action) {
+    case "lead_created":    return `New lead added${meta?.source ? ` via ${meta.source}` : ""}`;
+    case "sms_sent":        return actor === "ai" ? `AI reply sent${meta?.preview ? ` — "${String(meta.preview).slice(0, 50)}…"` : ""}` : "SMS sent";
+    case "sms_received":    return `Lead replied`;
+    case "tour_scheduled":  return `Tour scheduled`;
+    case "lead_won":        return `Lease signed 🎉`;
+    case "lead_lost":       return `Lead marked lost`;
+    case "human_takeover":  return `Human takeover triggered`;
+    case "follow_up_sent":  return `Follow-up sent automatically`;
+    default:                return action.replace(/_/g, " ");
+  }
+}
+
+const STATUS_STYLES: Record<LeadStatus, { dot: string; label: string; text: string }> = {
+  new:            { dot: "bg-indigo-400",  label: "New",          text: "text-indigo-700" },
+  contacted:      { dot: "bg-sky-400",     label: "Contacted",    text: "text-sky-700" },
+  engaged:        { dot: "bg-violet-400",  label: "Engaged",      text: "text-violet-700" },
+  tour_scheduled: { dot: "bg-amber-400",   label: "Tour Booked",  text: "text-amber-700" },
+  applied:        { dot: "bg-orange-400",  label: "Applied",      text: "text-orange-700" },
+  won:            { dot: "bg-green-500",   label: "Won",          text: "text-green-700" },
+  lost:           { dot: "bg-gray-400",    label: "Lost",         text: "text-gray-500" },
+};
+
+const PIPELINE_ORDER: LeadStatus[] = ["new", "contacted", "engaged", "tour_scheduled", "applied"];
+const PIPELINE_COLORS: Record<LeadStatus, string> = {
+  new: "bg-indigo-400", contacted: "bg-sky-400", engaged: "bg-violet-400",
+  tour_scheduled: "bg-amber-400", applied: "bg-orange-400", won: "bg-green-400", lost: "bg-gray-300",
+};
+
+const ACTOR_STYLE: Record<string, string> = {
+  ai:     "bg-violet-50 text-violet-700",
+  system: "bg-gray-100 text-gray-500",
+  agent:  "bg-blue-50 text-blue-700",
+};
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse rounded bg-gray-100 ${className ?? ""}`} />;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const [operator, setOperator]     = useState<Operator | null>(null);
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [leads, setLeads]           = useState<Lead[]>([]);
+  const [activity, setActivity]     = useState<ActivityItem[]>([]);
+  const [loading, setLoading]       = useState(true);
+
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-  const totalUnits = DONUT_SEGMENTS.reduce((a, s) => a + s.units, 0);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const { data: { user } } = await getSupabase().auth.getUser();
+        if (!user?.email) return;
+
+        // Load operator + properties
+        const [setupRes, propRes] = await Promise.all([
+          fetch(`/api/setup?email=${encodeURIComponent(user.email)}`),
+          fetch(`/api/properties?email=${encodeURIComponent(user.email)}`),
+        ]);
+        const setupJson = await setupRes.json();
+        const propJson  = await propRes.json();
+
+        const op: Operator | null = setupJson.operator ?? null;
+        const props: Property[]   = propJson.properties ?? [];
+        setOperator(op);
+        setProperties(props);
+
+        if (!op || !props.length) return;
+
+        // Load leads for all properties
+        const allLeads: Lead[] = [];
+        await Promise.all(props.map(async (p) => {
+          const res = await fetch(`/api/leads?propertyId=${p.id}`);
+          const json = await res.json();
+          const rows = (json.leads ?? []) as Lead[];
+          rows.forEach((l) => { l.property_name = p.name; });
+          allLeads.push(...rows);
+        }));
+        allLeads.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setLeads(allLeads);
+
+        // Load activity
+        const actRes = await fetch(`/api/activity?operator_id=${op.id}&limit=10`);
+        const actJson = await actRes.json();
+        setActivity(actJson.activity ?? []);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  // Compute stats
+  const activeLeads  = leads.filter((l) => !["won", "lost"].includes(l.status));
+  const newLeads     = leads.filter((l) => l.status === "new");
+  const tours        = leads.filter((l) => l.status === "tour_scheduled");
+  const won          = leads.filter((l) => l.status === "won");
+
+  // Pipeline counts
+  const pipelineCounts = PIPELINE_ORDER.map((status) => ({
+    status,
+    label: STATUS_STYLES[status].label,
+    color: PIPELINE_COLORS[status],
+    count: leads.filter((l) => l.status === status).length,
+  }));
+  const maxPipeline = Math.max(...pipelineCounts.map((p) => p.count), 1);
+
+  // Needs attention: new leads (no reply yet) + very old contacted leads
+  const attentionLeads = [
+    ...newLeads.map((l) => ({ lead: l, issue: "New lead — needs AI reply", urgency: "high" as const })),
+    ...leads.filter((l) => l.status === "contacted" && l.last_contacted_at &&
+      Date.now() - new Date(l.last_contacted_at).getTime() > 3 * 86400000
+    ).map((l) => ({ lead: l, issue: "No reply in 3+ days — follow-up overdue", urgency: "high" as const })),
+    ...leads.filter((l) => l.status === "tour_scheduled")
+      .map((l) => ({ lead: l, issue: "Tour scheduled — confirm with lead", urgency: "medium" as const })),
+  ].slice(0, 5);
+
+  const operatorFirstName = operator?.name?.split(" ")[0] ?? "there";
 
   return (
     <div className="space-y-5 p-4 lg:p-6">
 
-      {/* ── Greeting ────────────────────────────────────────────────────── */}
+      {/* Greeting */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Good morning, Marcus.</h1>
-        <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">{today} · 6 properties · 24 active leads</p>
+        {loading
+          ? <Skeleton className="h-7 w-48" />
+          : <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Good morning, {operatorFirstName}.</h1>
+        }
+        <p className="mt-0.5 text-sm text-gray-400 dark:text-gray-500">
+          {today} · {properties.length} {properties.length === 1 ? "property" : "properties"} · {activeLeads.length} active leads
+        </p>
       </div>
 
-      {/* ── KPI strip — operations ──────────────────────────────────────── */}
+      {/* KPI strip */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           {
-            label: "Portfolio Occupancy", value: "88.3%",
-            sub: "106 / 120 units filled", trend: "+1.4pts this month", trendUp: true,
-            accent: "bg-green-50 dark:bg-green-900/20", accentText: "text-green-600 dark:text-green-400",
+            label: "Active Leads",
+            value: loading ? "—" : activeLeads.length.toString(),
+            sub: loading ? "" : `${newLeads.length} new · need reply`,
+            accent: "bg-indigo-50 dark:bg-indigo-900/20",
+            accentText: "text-indigo-600 dark:text-indigo-400",
+            trend: newLeads.length > 0 ? `${newLeads.length} awaiting reply` : "All caught up",
+            trendUp: newLeads.length === 0,
           },
           {
-            label: "Active Leads", value: "24",
-            sub: "across 6 properties", trend: "+3 vs last week", trendUp: true,
-            accent: "bg-indigo-50 dark:bg-indigo-900/20", accentText: "text-indigo-600 dark:text-indigo-400",
+            label: "Tours Scheduled",
+            value: loading ? "—" : tours.length.toString(),
+            sub: "pending or upcoming",
+            accent: "bg-amber-50 dark:bg-amber-900/20",
+            accentText: "text-amber-600 dark:text-amber-400",
+            trend: tours.length > 0 ? `${tours.length} to confirm` : "None scheduled",
+            trendUp: false,
           },
           {
-            label: "Tours This Week", value: "7",
-            sub: "3 confirmed · 2 pending", trend: "+2 from last week", trendUp: true,
-            accent: "bg-amber-50 dark:bg-amber-900/20", accentText: "text-amber-600 dark:text-amber-400",
+            label: "Leases Won",
+            value: loading ? "—" : won.length.toString(),
+            sub: "via LeaseUp Bulldog",
+            accent: "bg-green-50 dark:bg-green-900/20",
+            accentText: "text-green-600 dark:text-green-400",
+            trend: won.length > 0 ? `${won.length} lease${won.length > 1 ? "s" : ""} signed` : "First one incoming",
+            trendUp: won.length > 0,
           },
           {
-            label: "Avg. Response Time", value: "1m 08s",
-            sub: "AI-powered · all properties", trend: "↓ 63% vs last month", trendUp: true,
-            accent: "bg-violet-50 dark:bg-violet-900/20", accentText: "text-violet-600 dark:text-violet-400",
+            label: "AI Response Time",
+            value: "< 60s",
+            sub: "all inbound SMS",
+            accent: "bg-violet-50 dark:bg-violet-900/20",
+            accentText: "text-violet-600 dark:text-violet-400",
+            trend: "Always on, 24/7",
+            trendUp: true,
           },
         ].map((k) => (
-          <div key={k.label} className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
+          <div key={k.label} className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E]">
             <p className="text-xs font-medium text-gray-400 dark:text-gray-500">{k.label}</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{k.value}</p>
+            {loading
+              ? <Skeleton className="mt-2 h-9 w-20" />
+              : <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">{k.value}</p>
+            }
             <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{k.sub}</p>
             <div className="mt-3">
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${k.accent} ${k.accentText}`}>
-                {k.trendUp ? "↑" : "↓"} {k.trend}
+                {k.trendUp ? "↑" : "→"} {k.trend}
               </span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* ── AI Intelligence ─────────────────────────────────────────────── */}
+      {/* AI Intelligence */}
       <IntelligenceSection />
 
-      {/* ── LUB Performance & Billing ───────────────────────────────────── */}
-      <div className="rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
-        <div className="flex items-center justify-between border-b border-gray-50 px-6 py-4 dark:border-white/5">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">LUB Performance — April 2026</h3>
-            <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">Leases attributed to LeaseUp Bulldog · $200 per signed lease</p>
-          </div>
-          <Link href="/settings" className="text-xs font-medium text-[#C8102E] hover:underline">Billing →</Link>
-        </div>
-
-        <div className="grid grid-cols-2 gap-px bg-gray-100 dark:bg-white/5 lg:grid-cols-4">
-          {[
-            {
-              label:   "Leases Signed (LUB)",
-              value:   "3",
-              sub:     "within 30-day attribution window",
-              color:   "text-gray-900 dark:text-gray-100",
-            },
-            {
-              label:   "Performance Fees",
-              value:   "$600",
-              sub:     "3 leases × $200",
-              color:   "text-[#C8102E]",
-            },
-            {
-              label:   "Lead Conversion Rate",
-              value:   "12.5%",
-              sub:     "3 won / 24 total leads",
-              color:   "text-gray-900 dark:text-gray-100",
-            },
-            {
-              label:   "Platform Fee",
-              value:   "$1,000",
-              sub:     "monthly · billed May 1",
-              color:   "text-gray-900 dark:text-gray-100",
-            },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white px-5 py-4 dark:bg-[#1C1F2E]">
-              <p className="text-xs text-gray-400 dark:text-gray-500">{stat.label}</p>
-              <p className={`mt-1 text-2xl font-bold tabular-nums ${stat.color}`}>{stat.value}</p>
-              <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">{stat.sub}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Attribution breakdown */}
-        <div className="px-6 py-4">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Attribution Breakdown</p>
-          <div className="space-y-2">
-            {[
-              { lead: "Sofia Ruiz",    property: "The Monroe",       signed: "Apr 3",  rent: "$1,450/mo", billable: true  },
-              { lead: "James Wright",  property: "Parkview Commons", signed: "Apr 11", rent: "$1,280/mo", billable: true  },
-              { lead: "Priya Nair",    property: "The Monroe",       signed: "Apr 18", rent: "$1,620/mo", billable: true  },
-              { lead: "Tom Kowalski",  property: "Parkview Commons", signed: "Apr 19", rent: "$1,100/mo", billable: false },
-            ].map((row) => (
-              <div key={row.lead} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 px-4 py-2.5 dark:border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className={`h-2 w-2 shrink-0 rounded-full ${row.billable ? "bg-green-400" : "bg-gray-300 dark:bg-gray-600"}`} />
-                  <div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{row.lead}</span>
-                    <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">{row.property}</span>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-gray-500 dark:text-gray-400">Signed {row.signed}</span>
-                  <span className="font-medium text-gray-700 dark:text-gray-300">{row.rent}</span>
-                  {row.billable ? (
-                    <span className="rounded-full bg-green-100 px-2.5 py-0.5 font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400">+$200 fee</span>
-                  ) : (
-                    <span className="rounded-full bg-gray-100 px-2.5 py-0.5 font-semibold text-gray-500 dark:bg-white/5 dark:text-gray-500">Outside window</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Main grid ───────────────────────────────────────────────────── */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_260px_280px]">
+      {/* Main grid */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
 
         {/* Needs Attention */}
-        <div className="rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
+        <div className="rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E]">
           <div className="flex items-center justify-between border-b border-gray-50 px-6 py-4 dark:border-white/5">
             <div>
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Needs Attention</h3>
@@ -230,92 +269,160 @@ export default function DashboardPage() {
             </div>
             <Link href="/leads" className="text-xs font-medium text-[#C8102E] hover:underline">View all →</Link>
           </div>
-          <div className="divide-y divide-gray-50 dark:divide-white/5">
-            {ATTENTION_ITEMS.map((item) => (
-              <Link key={item.id} href="/leads" className="flex items-start gap-4 px-6 py-4 transition-colors hover:bg-gray-50/60 dark:hover:bg-white/5">
-                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${URGENCY_DOT[item.urgency]}`} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{item.name}</span>
-                    <StatusBadge status={item.status} />
+
+          {loading ? (
+            <div className="divide-y divide-gray-50 dark:divide-white/5">
+              {[1,2,3].map((i) => (
+                <div key={i} className="flex items-start gap-4 px-6 py-4">
+                  <Skeleton className="mt-1 h-2.5 w-2.5 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3.5 w-36" />
+                    <Skeleton className="h-2.5 w-56" />
                   </div>
-                  <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{item.issue}</p>
-                  <p className="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">{item.property}</p>
                 </div>
-                <span className={`shrink-0 self-start rounded-full px-2 py-0.5 text-[10px] font-semibold ${URGENCY_AGE_STYLE[item.urgency]}`}>{item.age}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Portfolio Occupancy Ring */}
-        <div className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
-          <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Portfolio Occupancy</h3>
-          <div className="mx-auto h-[140px] w-[140px]">
-            <DonutChart segments={DONUT_SEGMENTS} />
-          </div>
-          <div className="mt-4 space-y-1.5">
-            {DONUT_SEGMENTS.filter((s) => s.label !== "Vacant").slice(0, 4).map((seg) => (
-              <div key={seg.label} className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: seg.color }} />
-                  <span className="max-w-[110px] truncate text-[11px] text-gray-500 dark:text-gray-400">{seg.label}</span>
-                </div>
-                <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">{seg.units}</span>
-              </div>
-            ))}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-gray-200 dark:bg-gray-600" />
-                <span className="text-[11px] text-gray-400 dark:text-gray-500">Vacant</span>
-              </div>
-              <span className="text-[11px] font-semibold text-gray-400 dark:text-gray-500">{DONUT_SEGMENTS.find((s) => s.label === "Vacant")?.units}</span>
+              ))}
             </div>
-            <p className="pt-1 text-[10px] text-gray-300 dark:text-gray-600">{totalUnits} total units across 6 properties</p>
-          </div>
+          ) : attentionLeads.length === 0 ? (
+            <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth={2} className="h-6 w-6">
+                  <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">All caught up!</p>
+              <p className="mt-1 text-xs text-gray-400">No leads need immediate attention.</p>
+              {leads.length === 0 && (
+                <Link href="/leads" className="mt-3 rounded-xl bg-[#C8102E] px-4 py-2 text-xs font-bold text-white hover:bg-[#A50D25]">
+                  Add First Lead →
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50 dark:divide-white/5">
+              {attentionLeads.map(({ lead, issue, urgency }) => {
+                const st = STATUS_STYLES[lead.status];
+                return (
+                  <Link key={lead.id} href="/leads"
+                    className="flex items-start gap-4 px-6 py-4 transition-colors hover:bg-gray-50/60 dark:hover:bg-white/5">
+                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${urgency === "high" ? "bg-red-400" : "bg-amber-400"}`} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{lead.name}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${st.text} bg-opacity-10`}
+                          style={{ background: `${st.dot === "bg-indigo-400" ? "#EEF2FF" : st.dot === "bg-amber-400" ? "#FFFBEB" : "#F5F3FF"}` }}>
+                          {st.label}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{issue}</p>
+                      <p className="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">{lead.property_name}</p>
+                    </div>
+                    <span className={`shrink-0 self-start rounded-full px-2 py-0.5 text-[10px] font-semibold ${urgency === "high" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"}`}>
+                      {relativeTime(lead.created_at)}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Pipeline + Activity */}
+        {/* Right column: Pipeline + Activity */}
         <div className="flex flex-col gap-4">
-          <div className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
+
+          {/* Pipeline */}
+          <div className="rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E]">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Pipeline</h3>
               <Link href="/leads" className="text-[11px] font-medium text-[#C8102E] hover:underline">Open →</Link>
             </div>
-            <div className="space-y-2.5">
-              {PIPELINE_STAGES.map((s) => (
-                <div key={s.label}>
-                  <div className="mb-1 flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500 dark:text-gray-400">{s.label}</span>
-                    <span className="text-[11px] font-bold tabular-nums text-gray-900 dark:text-gray-100">{s.count}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-white/5">
-                    <div className={`h-full rounded-full ${s.color}`} style={{ width: `${s.pct}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex-1 rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
-            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h3>
-            <div className="space-y-3">
-              {ACTIVITY.map((item) => (
-                <div key={item.id} className="flex items-start gap-2.5">
-                  <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${item.dot}`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">{item.text}</p>
-                    <div className="mt-0.5 flex items-center gap-1.5">
-                      <span className={`rounded px-1 py-0.5 text-[9px] font-semibold ${ACTOR_LABEL[item.actor] ?? "bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400"}`}>{item.actor}</span>
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500">{item.time}</span>
+            {loading ? (
+              <div className="space-y-3">
+                {[1,2,3,4,5].map((i) => <Skeleton key={i} className="h-6 w-full" />)}
+              </div>
+            ) : leads.length === 0 ? (
+              <div className="py-4 text-center">
+                <p className="text-xs text-gray-400">No leads yet.</p>
+                <Link href="/leads" className="mt-2 block text-xs font-semibold text-[#C8102E] hover:underline">Add first lead →</Link>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {pipelineCounts.map((s) => (
+                  <div key={s.status}>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">{s.label}</span>
+                      <span className="text-[11px] font-bold tabular-nums text-gray-900 dark:text-gray-100">{s.count}</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-white/5">
+                      <div className={`h-full rounded-full ${s.color} transition-all`}
+                        style={{ width: `${(s.count / maxPipeline) * 100}%` }} />
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Activity */}
+          <div className="flex-1 rounded-2xl bg-white p-5 shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E]">
+            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h3>
+            {loading ? (
+              <div className="space-y-3">
+                {[1,2,3].map((i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    <Skeleton className="mt-1.5 h-1.5 w-1.5 rounded-full" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-3 w-full" />
+                      <Skeleton className="h-2.5 w-20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : activity.length === 0 ? (
+              <div className="py-4 text-center">
+                <p className="text-xs text-gray-400">Activity will appear here as leads come in.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activity.map((item) => (
+                  <div key={item.id} className="flex items-start gap-2.5">
+                    <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${item.actor === "ai" ? "bg-violet-400" : item.actor === "agent" ? "bg-blue-400" : "bg-gray-300"}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs leading-relaxed text-gray-700 dark:text-gray-300">
+                        {formatAction(item.action, item.actor, item.metadata)}
+                      </p>
+                      <div className="mt-0.5 flex items-center gap-1.5">
+                        <span className={`rounded px-1 py-0.5 text-[9px] font-semibold capitalize ${ACTOR_STYLE[item.actor] ?? "bg-gray-100 text-gray-500"}`}>
+                          {item.actor}
+                        </span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{relativeTime(item.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Setup prompt if no properties */}
+      {!loading && properties.length === 0 && (
+        <div className="rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center dark:border-white/10">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#C8102E]/10">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#C8102E" strokeWidth={1.75} className="h-7 w-7">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M9 22V12h6v10" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h3 className="mb-1 text-base font-bold text-gray-900 dark:text-gray-100">Add your first property</h3>
+          <p className="mb-4 text-sm text-gray-400">Set up your property and Twilio number to start receiving AI-managed leads.</p>
+          <Link href="/setup"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#C8102E] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#A50D25] transition-colors"
+            style={{ boxShadow: "0 6px 20px rgba(200,16,46,0.25)" }}>
+            Set Up Property →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

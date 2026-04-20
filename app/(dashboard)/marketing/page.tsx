@@ -1,6 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+  );
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -82,9 +90,9 @@ interface WhatIfResult {
   reasoning: string;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── (Campaigns loaded from Supabase via useEffect in MarketingPage) ─────────
 
-const MOCK_CAMPAIGNS: Campaign[] = [
+const _UNUSED_CAMPAIGNS_PLACEHOLDER: Campaign[] = [
   {
     id: "c1",
     property: "The Monroe",
@@ -937,10 +945,55 @@ function NewCampaignModal({ onClose }: { onClose: () => void }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MarketingPage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(MOCK_CAMPAIGNS);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [filter, setFilter] = useState<CampaignStatus | "all">("all");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadCampaigns() {
+      setLoading(true);
+      try {
+        const { data: { user } } = await getSupabase().auth.getUser();
+        if (!user?.email) return;
+        const setupRes = await fetch(`/api/setup?email=${encodeURIComponent(user.email)}`);
+        const setupJson = await setupRes.json();
+        const operatorId = setupJson.operator?.id;
+        if (!operatorId) return;
+        const res = await fetch(`/api/campaigns?operator_id=${operatorId}`);
+        const json = await res.json();
+        const raw = json.campaigns ?? [];
+        // Normalize DB shape to Campaign interface
+        const normalized: Campaign[] = raw.map((c: Record<string, unknown>) => ({
+          id:                    c.id as string,
+          property:              ((c.properties as Record<string, unknown>)?.name as string) ?? "Property",
+          property_id:           c.property_id as string,
+          operator_id:           c.operator_id as string,
+          status:                (c.status as CampaignStatus) ?? "pending_approval",
+          messaging_angle:       (c.messaging_angle as string) ?? "",
+          recommended_channels:  (c.recommended_channels as AdChannel[]) ?? [],
+          urgency:               (c.urgency as string) ?? "normal",
+          current_special:       (c.current_special as string | null) ?? null,
+          created_at:            new Date(c.created_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          leads_generated:       (c.leads_generated as number) ?? 0,
+          variations:            ((c.ad_variations as Record<string, unknown>[]) ?? []).map((v) => ({
+            id:            v.id as string,
+            variation_num: v.variation_num as number,
+            headline:      v.headline as string,
+            primary_text:  v.primary_text as string,
+            cta:           v.cta as string,
+            channel:       v.channel as AdChannel,
+            approved:      (v.status as string) === "approved",
+          })),
+        }));
+        setCampaigns(normalized);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCampaigns();
+  }, []);
 
   const selected = campaigns.find(c => c.id === selectedId) ?? null;
 
@@ -1025,7 +1078,13 @@ export default function MarketingPage() {
             </div>
 
             <div className="space-y-3">
-              {filtered.length === 0 && (
+              {loading && (
+                <div className="rounded-xl border border-gray-100 bg-white p-10 text-center dark:border-white/5 dark:bg-[#1C1F2E]">
+                  <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-gray-200 border-t-[#C8102E]" />
+                  <p className="text-sm text-gray-400">Loading campaigns…</p>
+                </div>
+              )}
+              {!loading && filtered.length === 0 && (
                 <div className="rounded-xl border border-gray-100 bg-white p-10 text-center dark:border-white/5 dark:bg-[#1C1F2E]">
                   <p className="text-gray-400 dark:text-gray-500">No campaigns yet. Click <strong>+ New Campaign</strong> to generate one with AI.</p>
                 </div>

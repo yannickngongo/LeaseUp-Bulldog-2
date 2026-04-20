@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
   const db = getSupabaseAdmin();
   let query = db
     .from("campaigns")
-    .select("*, ad_variations(*)")
+    .select("*, ad_variations(*), properties(name)")
     .order("created_at", { ascending: false });
 
   if (propertyId) query = query.eq("property_id", propertyId);
