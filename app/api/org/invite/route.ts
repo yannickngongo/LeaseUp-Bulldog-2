@@ -77,8 +77,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "User is already a member" }, { status: 409 });
   }
 
-  // Create invitation with an explicit token
+  // Create invitation with an explicit token and expiry
   const token = randomUUID();
+  const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
   const { data: invitation, error: invErr } = await db
     .from("organization_invitations")
     .insert({
@@ -86,14 +88,14 @@ export async function POST(req: NextRequest) {
       email:           inviteEmail,
       role,
       property_ids:    propertyIds,
-      invited_by:      callerEmail,
       token,
+      expires_at,
     })
     .select("id, token, email, role, expires_at")
     .single();
 
   if (invErr || !invitation) {
-    return NextResponse.json({ error: "Failed to create invitation" }, { status: 500 });
+    return NextResponse.json({ error: invErr?.message ?? "Failed to create invitation" }, { status: 500 });
   }
 
   await db.from("activity_logs").insert({
