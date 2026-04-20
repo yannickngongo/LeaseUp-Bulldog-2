@@ -90,64 +90,6 @@ interface WhatIfResult {
   reasoning: string;
 }
 
-// ─── (Campaigns loaded from Supabase via useEffect in MarketingPage) ─────────
-
-const _UNUSED_CAMPAIGNS_PLACEHOLDER: Campaign[] = [
-  {
-    id: "c1",
-    property: "The Monroe",
-    property_id: "prop-1",
-    operator_id: "op-1",
-    status: "pending_approval",
-    messaging_angle: "Highlight the modern finishes and unbeatable downtown location to attract young professionals.",
-    recommended_channels: ["facebook", "instagram"],
-    urgency: "high",
-    current_special: "1 month free on 12-month leases",
-    created_at: "Apr 18, 2026",
-    leads_generated: 0,
-    variations: [
-      { id: "v1", variation_num: 1, headline: "Live Downtown. Pay Less.", primary_text: "Modern 1 & 2BR apartments in the heart of the city. 1 month free on 12-month leases — limited availability.", cta: "See Floor Plans", channel: "facebook", approved: false },
-      { id: "v2", variation_num: 2, headline: "Your City. Your Home.", primary_text: "The Monroe puts you steps from everything. Sleek finishes, in-unit W/D, rooftop access. Schedule a tour today.", cta: "Book a Tour", channel: "instagram", approved: false },
-      { id: "v3", variation_num: 3, headline: "1 Month Free — Act Fast", primary_text: "Don't miss out. Apartments at The Monroe are filling up fast. 1BR from $1,450/mo with our limited-time move-in special.", cta: "Claim Offer", channel: "facebook", approved: false },
-      { id: "v4", variation_num: 4, headline: "Modern. Central. Yours.", primary_text: "The Monroe: premium downtown living at a price that works. Walk to work, restaurants, and nightlife. Tour this week.", cta: "Apply Now", channel: "instagram", approved: false },
-    ],
-  },
-  {
-    id: "c2",
-    property: "Parkview Commons",
-    property_id: "prop-2",
-    operator_id: "op-1",
-    status: "active",
-    messaging_angle: "Emphasize family-friendly amenities and safety to attract families and long-term renters.",
-    recommended_channels: ["facebook", "google"],
-    urgency: "normal",
-    current_special: "$500 off first month",
-    created_at: "Apr 10, 2026",
-    leads_generated: 23,
-    variations: [
-      { id: "v5", variation_num: 1, headline: "Space for Your Family", primary_text: "2 & 3BR apartments at Parkview Commons. Top-rated schools, park views, gated community. $500 off your first month.", cta: "See Availability", channel: "facebook", approved: true },
-      { id: "v6", variation_num: 2, headline: "Parkview Commons Apartments", primary_text: "Spacious 2-3BR family apartments near top schools. $500 move-in special. Schedule a tour today.", cta: "Tour Now", channel: "google", approved: true },
-    ],
-  },
-  {
-    id: "c3",
-    property: "Creekside at Summerlin",
-    property_id: "prop-3",
-    operator_id: "op-1",
-    status: "paused",
-    messaging_angle: "Lifestyle-first messaging targeting remote workers seeking quiet, nature-adjacent living.",
-    recommended_channels: ["facebook", "instagram"],
-    urgency: "low",
-    current_special: null,
-    created_at: "Mar 28, 2026",
-    leads_generated: 47,
-    variations: [
-      { id: "v7", variation_num: 1, headline: "Work From Anywhere. Live Here.", primary_text: "Fast fiber, peaceful surroundings, and a community that fits your pace. Creekside at Summerlin — your remote work HQ.", cta: "Explore Homes", channel: "facebook", approved: true },
-      { id: "v8", variation_num: 2, headline: "Nature Meets Modern Living", primary_text: "Wake up to creek views and mountain trails. Creekside offers resort-style amenities without the resort price.", cta: "See Photos", channel: "instagram", approved: true },
-    ],
-  },
-];
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<CampaignStatus, string> = {
