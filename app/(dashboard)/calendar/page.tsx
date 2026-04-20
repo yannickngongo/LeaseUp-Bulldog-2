@@ -146,9 +146,9 @@ export default function CalendarPage() {
           </div>
           <h3 className="mb-1 text-base font-bold text-gray-900 dark:text-gray-100">No properties set up</h3>
           <p className="mb-5 text-sm text-gray-400">Add a property first to start scheduling tours.</p>
-          <a href="/setup"
+          <a href="/properties/new"
             className="rounded-xl bg-[#C8102E] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#A50D25] transition-colors">
-            Set Up Property →
+            Add Property →
           </a>
         </div>
       )}

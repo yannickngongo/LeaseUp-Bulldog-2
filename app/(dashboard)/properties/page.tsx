@@ -110,10 +110,10 @@ export default function PropertiesPage() {
           </div>
           <h3 className="mb-1 text-base font-bold text-gray-900 dark:text-gray-100">No properties yet</h3>
           <p className="mb-5 text-sm text-gray-400">Add your first property to start managing leads with AI.</p>
-          <Link href="/setup"
+          <Link href="/properties/new"
             className="rounded-xl bg-[#C8102E] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#A50D25] transition-colors"
             style={{ boxShadow: "0 6px 20px rgba(200,16,46,0.25)" }}>
-            Set Up First Property →
+            Add First Property →
           </Link>
         </div>
       )}
@@ -208,6 +208,16 @@ export default function PropertiesPage() {
                   className="flex-1 rounded-xl border border-gray-200 py-2 text-center text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors dark:border-white/10 dark:text-gray-300">
                   Edit / Rent Roll
                 </Link>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
+                    const res = await fetch(`/api/properties/${p.id}`, { method: "DELETE" });
+                    if (res.ok) setProperties(prev => prev.filter(x => x.id !== p.id));
+                    else alert("Failed to delete property");
+                  }}
+                  className="rounded-xl border border-red-100 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-50 transition-colors dark:border-red-900/20 dark:hover:bg-red-900/10">
+                  Delete
+                </button>
               </div>
             </div>
           ))}

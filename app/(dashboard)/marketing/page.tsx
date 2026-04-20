@@ -1112,40 +1112,52 @@ export default function MarketingPage() {
               {filtered.map(campaign => (
                 <div
                   key={campaign.id}
-                  onClick={() => setSelectedId(campaign.id)}
-                  className="cursor-pointer rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-white/5 dark:bg-[#1C1F2E]"
+                  className="relative rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-white/5 dark:bg-[#1C1F2E]"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100">{campaign.property}</p>
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[campaign.status]}`}>
-                          {STATUS_LABELS[campaign.status]}
-                        </span>
-                        {campaign.urgency === "high" && (
-                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-900/30 dark:text-red-400">
-                            High urgency
+                  <div className="cursor-pointer" onClick={() => setSelectedId(campaign.id)}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">{campaign.property}</p>
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[campaign.status]}`}>
+                            {STATUS_LABELS[campaign.status]}
                           </span>
-                        )}
+                          {campaign.urgency === "high" && (
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                              High urgency
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">{campaign.messaging_angle}</p>
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">{campaign.messaging_angle}</p>
+                      <div className="flex items-center gap-4 shrink-0">
+                        <div className="hidden sm:block text-right">
+                          <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{campaign.leads_generated}</p>
+                          <p className="text-[11px] text-gray-400 dark:text-gray-500">leads</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          {campaign.recommended_channels.map(ch => <ChannelBadge key={ch} channel={ch} />)}
+                        </div>
+                        <span className="text-gray-300 dark:text-gray-600">›</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      <div className="hidden sm:block text-right">
-                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">{campaign.leads_generated}</p>
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500">leads</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {campaign.recommended_channels.map(ch => <ChannelBadge key={ch} channel={ch} />)}
-                      </div>
-                      <span className="text-gray-300 dark:text-gray-600">›</span>
+                    <div className="mt-3 flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-50 dark:border-white/5 pt-3">
+                      <span>{campaign.variations.length} variations</span>
+                      {campaign.current_special && <span>· {campaign.current_special}</span>}
+                      <span>· Created {campaign.created_at}</span>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-50 dark:border-white/5 pt-3">
-                    <span>{campaign.variations.length} variations</span>
-                    {campaign.current_special && <span>· {campaign.current_special}</span>}
-                    <span>· Created {campaign.created_at}</span>
-                  </div>
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (!confirm("Delete this campaign?")) return;
+                      await fetch(`/api/campaigns/${campaign.id}`, { method: "DELETE" });
+                      setCampaigns(prev => prev.filter(c => c.id !== campaign.id));
+                    }}
+                    className="absolute right-3 top-3 rounded px-2 py-0.5 text-[11px] font-medium text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                  >
+                    Delete
+                  </button>
                 </div>
               ))}
             </div>

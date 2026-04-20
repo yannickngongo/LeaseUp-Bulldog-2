@@ -132,7 +132,7 @@ export default function NewLeadPage() {
                   {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
                 {properties.length === 0 && (
-                  <p className="mt-1.5 text-xs text-amber-500">No properties found. <Link href="/setup" className="underline">Add one first.</Link></p>
+                  <p className="mt-1.5 text-xs text-amber-500">No properties found. <Link href="/properties/new" className="underline">Add one first.</Link></p>
                 )}
               </div>
               <div>
