@@ -53,15 +53,17 @@ export async function GET(req: NextRequest) {
     .select("id, name, active_special, website_url, settings")
     .eq("operator_id", operator.id);
 
-  const operatorSettings = { ...DEFAULT_SETTINGS, ...(operator.settings ?? {}) };
+  const rawOpSettings = (operator.settings ?? {}) as Record<string, unknown>;
+  const operatorSettings = { ...DEFAULT_SETTINGS, ...rawOpSettings };
 
   const propertySettings: Record<string, typeof DEFAULT_PROPERTY_SETTINGS> = {};
   for (const p of properties ?? []) {
+    const rawPs = (p.settings ?? {}) as Record<string, unknown>;
     propertySettings[p.id] = {
       ...DEFAULT_PROPERTY_SETTINGS,
-      active_special: p.active_special ?? "",
-      ...(p.settings ?? {}),
-    };
+      active_special: (p.active_special as string) ?? "",
+      ...rawPs,
+    } as typeof DEFAULT_PROPERTY_SETTINGS;
   }
 
   return NextResponse.json({
