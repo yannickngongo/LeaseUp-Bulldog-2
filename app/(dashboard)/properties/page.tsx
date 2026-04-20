@@ -204,7 +204,7 @@ export default function PropertiesPage() {
                   className="flex-1 rounded-xl border border-gray-200 py-2 text-center text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors dark:border-white/10 dark:text-gray-300">
                   View Leads
                 </Link>
-                <Link href={`/properties/${p.id}`}
+                <Link href={`/properties/${p.id}/edit`}
                   className="flex-1 rounded-xl border border-gray-200 py-2 text-center text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors dark:border-white/10 dark:text-gray-300">
                   Edit / Rent Roll
                 </Link>

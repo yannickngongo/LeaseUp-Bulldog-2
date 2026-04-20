@@ -49,6 +49,7 @@ interface Property {
 }
 
 type FilterKey = "all" | "new" | "hot" | "follow_up" | "tour_scheduled" | "applied" | "lost";
+type PropertyFilter = "all" | string;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Status config — vivid colors like the reference deal cards
@@ -132,6 +133,11 @@ function applyFilter(leads: Lead[], filter: FilterKey): Lead[] {
     case "lost":           return leads.filter((l) => l.status === "lost");
     default:               return leads;
   }
+}
+
+function applyPropertyFilter(leads: Lead[], propertyFilter: PropertyFilter): Lead[] {
+  if (propertyFilter === "all") return leads;
+  return leads.filter((l) => l.property_id === propertyFilter);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -361,12 +367,14 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "lost", label: "Lost" },
 ];
 
-function LeftPanel({ leads, selectedId, filter, search, loading, onSelect, onFilterChange, onSearchChange, onAddLead }: {
-  leads: Lead[]; selectedId: string; filter: FilterKey; search: string; loading: boolean;
+function LeftPanel({ leads, properties, selectedId, filter, propertyFilter, search, loading, onSelect, onFilterChange, onPropertyFilterChange, onSearchChange, onAddLead }: {
+  leads: Lead[]; properties: Property[]; selectedId: string; filter: FilterKey; propertyFilter: PropertyFilter; search: string; loading: boolean;
   onSelect: (id: string) => void; onFilterChange: (f: FilterKey) => void;
+  onPropertyFilterChange: (p: PropertyFilter) => void;
   onSearchChange: (q: string) => void; onAddLead: () => void;
 }) {
-  const filtered = applyFilter(leads.filter((l) => l.name.toLowerCase().includes(search.toLowerCase())), filter);
+  const byProperty = applyPropertyFilter(leads, propertyFilter);
+  const filtered = applyFilter(byProperty.filter((l) => l.name.toLowerCase().includes(search.toLowerCase())), filter);
 
   return (
     <div className="flex w-full flex-col sm:w-[280px]">
@@ -396,12 +404,28 @@ function LeftPanel({ leads, selectedId, filter, search, loading, onSelect, onFil
             placeholder="Search leads…"
             className="flex-1 bg-transparent text-xs text-gray-700 placeholder-gray-400 focus:outline-none" />
         </div>
+
+        {/* Property filter */}
+        {properties.length > 1 && (
+          <div className="mt-2 flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-3.5 w-3.5 shrink-0 text-gray-400">
+              <path d="M8 1.5L1.5 6v8h4v-4h5v4h4V6L8 1.5z" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <select value={propertyFilter} onChange={(e) => onPropertyFilterChange(e.target.value)}
+              className="flex-1 bg-transparent text-xs text-gray-700 focus:outline-none">
+              <option value="all">All properties</option>
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
       <div className="flex gap-1 overflow-x-auto border-b border-gray-100 px-3 py-2 scrollbar-hide">
         {FILTERS.map((f) => {
-          const count = applyFilter(leads, f.key).length;
+          const count = applyFilter(applyPropertyFilter(leads, propertyFilter), f.key).length;
           return (
             <button key={f.key} onClick={() => onFilterChange(f.key)}
               className={cn("flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors",
@@ -791,6 +815,7 @@ export default function LeadsPage() {
   const [properties, setProperties]     = useState<Property[]>([]);
   const [selectedId, setSelectedId]     = useState<string>("");
   const [filter, setFilter]             = useState<FilterKey>("all");
+  const [propertyFilter, setPropertyFilter] = useState<PropertyFilter>("all");
   const [search, setSearch]             = useState("");
   const [leadsLoading, setLeadsLoading] = useState(true);
   const [messages, setMessages]         = useState<Message[]>([]);
@@ -862,10 +887,11 @@ export default function LeadsPage() {
   const selectedLead = leads.find((l) => l.id === selectedId);
   const hotLeads = leads.filter((l) => (l.ai_score ?? 0) >= 7 || l.status === "tour_scheduled").slice(0, 5);
 
-  // Stats
-  const newCount   = leads.filter((l) => l.status === "new").length;
-  const tourCount  = leads.filter((l) => l.status === "tour_scheduled").length;
-  const wonCount   = leads.filter((l) => l.status === "won").length;
+  // Stats (scoped to property filter)
+  const filteredLeads = applyPropertyFilter(leads, propertyFilter);
+  const newCount   = filteredLeads.filter((l) => l.status === "new").length;
+  const tourCount  = filteredLeads.filter((l) => l.status === "tour_scheduled").length;
+  const wonCount   = filteredLeads.filter((l) => l.status === "won").length;
 
   function handleSelectLead(id: string) {
     setSelectedId(id);
@@ -882,7 +908,7 @@ export default function LeadsPage() {
       <div className="shrink-0 border-b border-white/80 bg-white/70 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-3.5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide sm:gap-8">
-            <StatChip label="Total" value={leads.length.toString()} color="#6366F1" />
+            <StatChip label="Total" value={filteredLeads.length.toString()} color="#6366F1" />
             <div className="h-6 w-px shrink-0 bg-gray-100 sm:h-8" />
             <StatChip label="New" value={newCount.toString()} sub={newCount > 0 ? "needs reply" : ""} color="#3B82F6" />
             <div className="h-6 w-px shrink-0 bg-gray-100 sm:h-8" />
@@ -920,8 +946,10 @@ export default function LeadsPage() {
           mobileView === "list" ? "flex w-full" : "hidden"
         )}>
           <LeftPanel
-            leads={leads} selectedId={selectedId} filter={filter} search={search} loading={leadsLoading}
-            onSelect={handleSelectLead} onFilterChange={setFilter} onSearchChange={setSearch}
+            leads={leads} properties={properties} selectedId={selectedId} filter={filter}
+            propertyFilter={propertyFilter} search={search} loading={leadsLoading}
+            onSelect={handleSelectLead} onFilterChange={setFilter}
+            onPropertyFilterChange={setPropertyFilter} onSearchChange={setSearch}
             onAddLead={() => setShowAddModal(true)}
           />
         </div>
