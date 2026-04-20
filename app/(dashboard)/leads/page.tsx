@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { getOperatorEmail } from "@/lib/demo-auth";
 
@@ -155,13 +156,13 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
   useEffect(() => {
     async function load() {
       const email = await getOperatorEmail();
-      if (!email) return;
+      if (!email) { router.push("/setup"); return; }
       const res = await fetch(`/api/properties?email=${encodeURIComponent(email)}`);
       const json = await res.json();
       if (json.properties?.length) { setProperties(json.properties); setPropertyId(json.properties[0].id); }
     }
     load();
-  }, []);
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -785,6 +786,7 @@ function DetailPanel({ lead }: { lead: Lead }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function LeadsPage() {
+  const router = useRouter();
   const [leads, setLeads]               = useState<Lead[]>([]);
   const [properties, setProperties]     = useState<Property[]>([]);
   const [selectedId, setSelectedId]     = useState<string>("");
@@ -815,7 +817,7 @@ export default function LeadsPage() {
       setLeadsLoading(true);
       try {
         const email = await getOperatorEmail();
-        if (!email) return;
+        if (!email) { router.push("/setup"); return; }
         const propRes = await fetch(`/api/properties?email=${encodeURIComponent(email)}`);
         const propJson = await propRes.json();
         const props: Property[] = propJson.properties ?? [];
@@ -826,7 +828,7 @@ export default function LeadsPage() {
       } finally { setLeadsLoading(false); }
     }
     init();
-  }, [loadLeads]);
+  }, [loadLeads, router]);
 
   useEffect(() => {
     if (!selectedId) return;

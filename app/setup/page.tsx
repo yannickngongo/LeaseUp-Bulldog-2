@@ -1,11 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { saveOperatorEmail } from "@/lib/demo-auth";
+import { getOperatorEmail, saveOperatorEmail } from "@/lib/demo-auth";
 
-type Step = "account" | "property" | "webhook" | "done";
+type Step = "account" | "property" | "rentroll" | "webhook" | "done";
+
+// ─── CSV parser (shared with properties/new) ──────────────────────────────────
+
+interface ParsedUnit {
+  unit_name: string; unit_type: string; bedrooms: number | null;
+  sq_ft: number | null; status: string; current_resident: string;
+  lease_end: string; monthly_rent: number | null;
+}
+
+function parseRentRollCsv(raw: string): ParsedUnit[] {
+  const lines = raw.trim().split("\n").map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].toLowerCase().split(",").map(h => h.trim().replace(/"/g, ""));
+  const col = (row: string[], name: string) => {
+    const idx = headers.findIndex(h => h.includes(name));
+    return idx >= 0 ? (row[idx] ?? "").trim().replace(/"/g, "") : "";
+  };
+  return lines.slice(1).map(line => {
+    const row = line.split(",");
+    const unit_name = col(row, "unit");
+    if (!unit_name) return null;
+    const sr = col(row, "status").toLowerCase();
+    const status = sr.includes("occup") ? "occupied" : sr.includes("notice") ? "notice" : sr.includes("unavail") ? "unavailable" : "vacant";
+    const tr = col(row, "type").toLowerCase();
+    const unit_type = tr.includes("studio") ? "studio" : tr.includes("4") ? "4br" : tr.includes("3") ? "3br" : tr.includes("2") ? "2br" : tr.includes("1") ? "1br" : tr || "";
+    const bedsRaw = col(row, "bed");
+    const sqftRaw = col(row, "sq") || col(row, "sqft") || col(row, "size");
+    const rentRaw = col(row, "rent") || col(row, "price") || col(row, "amount");
+    return {
+      unit_name, unit_type,
+      bedrooms: bedsRaw ? parseInt(bedsRaw, 10) || null : null,
+      sq_ft: sqftRaw ? parseInt(sqftRaw.replace(/\D/g, ""), 10) || null : null,
+      status,
+      current_resident: col(row, "resident") || col(row, "tenant") || col(row, "name"),
+      lease_end: col(row, "lease end") || col(row, "end date") || col(row, "move out"),
+      monthly_rent: rentRaw ? parseInt(rentRaw.replace(/[^0-9]/g, ""), 10) || null : null,
+    } as ParsedUnit;
+  }).filter(Boolean) as ParsedUnit[];
+}
 
 export default function SetupPage() {
   const router = useRouter();
@@ -14,16 +53,37 @@ export default function SetupPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [account, setAccount] = useState({ name: "", email: "" });
+
+  // Skip account step if user is already set up
+  useEffect(() => {
+    getOperatorEmail().then(async (email) => {
+      if (!email) return;
+      const res = await fetch(`/api/setup?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+      if (data.operator) {
+        setAccount({ name: data.operator.name ?? "", email });
+        setStep("property");
+      }
+    });
+  }, []);
   const [property, setProperty] = useState({
     name: "", address: "", city: "", state: "", zip: "",
+    neighborhood: "",
     phoneNumber: "", activeSpecial: "", websiteUrl: "",
     totalUnits: "", tourBookingUrl: "",
   });
+  const [rentRollCsv, setRentRollCsv] = useState("");
+  const [rentRollPreview, setRentRollPreview] = useState<ParsedUnit[]>([]);
   const [createdProperty, setCreatedProperty] = useState<{ id: string; name: string; phone_number: string } | null>(null);
 
   async function handleAccountNext() {
     if (!account.name || !account.email) return;
     setStep("property");
+  }
+
+  async function handlePropertyNext() {
+    if (!property.name || !property.address || !property.city || !property.state || !property.zip || !property.phoneNumber) return;
+    setStep("rentroll");
   }
 
   async function handlePropertySubmit() {
@@ -44,6 +104,7 @@ export default function SetupPage() {
           city:            property.city,
           state:           property.state,
           zip:             property.zip,
+          neighborhood:    property.neighborhood || null,
           phoneNumber:     property.phoneNumber,
           activeSpecial:   property.activeSpecial,
           websiteUrl:      property.websiteUrl,
@@ -61,6 +122,19 @@ export default function SetupPage() {
 
       saveOperatorEmail(email);
       setCreatedProperty(data.property);
+
+      // Upload rent roll if provided
+      if (rentRollCsv.trim() && data.property?.id) {
+        const units = parseRentRollCsv(rentRollCsv);
+        if (units.length > 0) {
+          await fetch(`/api/properties/${data.property.id}/units`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ units }),
+          });
+        }
+      }
+
       setStep("webhook");
     } catch {
       setError("Network error — please try again");
@@ -92,25 +166,27 @@ export default function SetupPage() {
         {/* Progress */}
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-4">
-            {(["account", "property", "webhook", "done"] as Step[]).map((s, i) => (
-              <div key={s} className="flex items-center gap-3">
-                <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-                  s === step ? "bg-[#C8102E] text-white"
-                  : ["account","property","webhook","done"].indexOf(s) < ["account","property","webhook","done"].indexOf(step)
-                    ? "bg-green-500 text-white"
-                    : "bg-[#1E1E2E] text-gray-500"
-                }`}>
-                  {["account","property","webhook","done"].indexOf(s) < ["account","property","webhook","done"].indexOf(step) ? "✓" : i + 1}
+            {(["account", "property", "rentroll", "webhook", "done"] as Step[]).map((s, i) => {
+              const ORDER = ["account","property","rentroll","webhook","done"];
+              const cur = ORDER.indexOf(step), idx = ORDER.indexOf(s);
+              return (
+                <div key={s} className="flex items-center gap-3">
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+                    s === step ? "bg-[#C8102E] text-white" : idx < cur ? "bg-green-500 text-white" : "bg-[#1E1E2E] text-gray-500"
+                  }`}>
+                    {idx < cur ? "✓" : i + 1}
+                  </div>
+                  {i < 4 && <div className={`h-px w-6 sm:w-10 ${idx < cur ? "bg-green-500" : "bg-[#1E1E2E]"}`} />}
                 </div>
-                {i < 3 && <div className={`h-px w-8 sm:w-16 ${["account","property","webhook","done"].indexOf(s) < ["account","property","webhook","done"].indexOf(step) ? "bg-green-500" : "bg-[#1E1E2E]"}`} />}
-              </div>
-            ))}
+              );
+            })}
           </div>
           <p className="text-xs text-gray-500">
-            {step === "account" && "Step 1 of 3 — Your account"}
-            {step === "property" && "Step 2 of 3 — Your first property"}
-            {step === "webhook" && "Step 3 of 3 — Connect Twilio"}
-            {step === "done" && "You're live!"}
+            {step === "account"   && "Step 1 of 4 — Your account"}
+            {step === "property"  && "Step 2 of 4 — Your first property"}
+            {step === "rentroll"  && "Step 3 of 4 — Rent roll (optional)"}
+            {step === "webhook"   && "Step 4 of 4 — Connect Twilio"}
+            {step === "done"      && "You're live!"}
           </p>
         </div>
 
@@ -212,6 +288,17 @@ export default function SetupPage() {
               </div>
 
               <div>
+                <label className="block text-xs font-semibold text-gray-400 mb-1.5">Neighborhood <span className="text-gray-600 font-normal">(optional)</span></label>
+                <input
+                  value={property.neighborhood}
+                  onChange={e => setProperty(p => ({ ...p, neighborhood: e.target.value }))}
+                  placeholder="e.g. Summerlin, Henderson, Downtown Las Vegas"
+                  className="w-full rounded-xl border border-[#1E1E2E] bg-[#16161F] px-4 py-3 text-sm text-white placeholder-gray-600 focus:border-[#C8102E] focus:outline-none"
+                />
+                <p className="mt-1.5 text-xs text-gray-600">Used for neighborhood-level market analysis — more precise than ZIP code.</p>
+              </div>
+
+              <div>
                 <label className="block text-xs font-semibold text-gray-400 mb-1.5">Twilio Phone Number *</label>
                 <input
                   value={property.phoneNumber}
@@ -280,20 +367,126 @@ export default function SetupPage() {
                 ← Back
               </button>
               <button
-                onClick={handlePropertySubmit}
-                disabled={loading || !property.name || !property.address || !property.city || !property.state || !property.zip || !property.phoneNumber}
+                onClick={handlePropertyNext}
+                disabled={!property.name || !property.address || !property.city || !property.state || !property.zip || !property.phoneNumber}
                 className="flex-1 rounded-xl bg-[#C8102E] py-3.5 text-sm font-bold text-white hover:bg-[#A50D25] disabled:opacity-40 transition-colors"
               >
-                {loading ? "Creating…" : "Create Property →"}
+                Continue →
               </button>
             </div>
           </div>
         )}
 
-        {/* ── Step 3: Webhook ── */}
+        {/* ── Step 3: Rent Roll ── */}
+        {step === "rentroll" && (
+          <div className="rounded-2xl border border-[#1E1E2E] bg-[#10101A] p-8">
+            <h1 className="text-2xl font-black mb-2">Upload your rent roll</h1>
+            <p className="text-gray-400 text-sm mb-6">
+              This lets Bulldog track your units, occupancy rate, and unit names automatically.
+              You can skip this and add it later from the property settings.
+            </p>
+
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-gray-400 mb-1.5">CSV format</p>
+              <div className="rounded-lg bg-[#16161F] border border-[#1E1E2E] px-3 py-2">
+                <code className="text-xs text-gray-500 font-mono">Unit Number,Unit Type,Status,Current Resident,Lease End Date,Monthly Rent</code>
+              </div>
+              <p className="mt-1 text-xs text-gray-600">Required: Unit Number, Status. Status values: Occupied, Vacant, Notice, Unavailable</p>
+            </div>
+
+            {/* File upload */}
+            <div className="mb-3 flex items-center gap-3">
+              <label className="cursor-pointer rounded-lg border border-[#1E1E2E] bg-[#16161F] px-4 py-2 text-xs font-semibold text-gray-400 hover:border-gray-500 hover:text-gray-300 transition-colors">
+                Upload CSV
+                <input type="file" accept=".csv,.txt" className="hidden" onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = ev => {
+                    const text = ev.target?.result as string;
+                    setRentRollCsv(text);
+                    setRentRollPreview(parseRentRollCsv(text));
+                  };
+                  reader.readAsText(file);
+                }} />
+              </label>
+              <span className="text-xs text-gray-600">or paste CSV below</span>
+            </div>
+
+            <textarea
+              value={rentRollCsv}
+              onChange={e => {
+                setRentRollCsv(e.target.value);
+                setRentRollPreview(parseRentRollCsv(e.target.value));
+              }}
+              rows={5}
+              placeholder={"101,1BR,Occupied,John Smith,2025-12-31,1250\n102,2BR,Vacant,,,1600\n103,Studio,Occupied,Jane Doe,2025-06-30,950"}
+              className="w-full rounded-xl border border-[#1E1E2E] bg-[#16161F] px-4 py-3 text-xs font-mono text-gray-300 placeholder-gray-700 focus:border-[#C8102E] focus:outline-none resize-none"
+            />
+
+            {rentRollPreview.length > 0 && (
+              <div className="mt-3 rounded-xl border border-[#1E1E2E] overflow-hidden">
+                <div className="bg-[#16161F] px-4 py-2.5 flex items-center justify-between">
+                  <p className="text-xs font-semibold text-gray-300">
+                    {rentRollPreview.length} units · {rentRollPreview.filter(u => u.status === "occupied" || u.status === "notice").length} occupied
+                  </p>
+                </div>
+                <div className="max-h-40 overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead><tr className="border-b border-[#1E1E2E]">
+                      {["Unit","Type","Status","Resident","Rent"].map(h => (
+                        <th key={h} className="px-3 py-1.5 text-left font-semibold text-gray-500">{h}</th>
+                      ))}
+                    </tr></thead>
+                    <tbody>
+                      {rentRollPreview.slice(0, 15).map((u, i) => (
+                        <tr key={i} className="border-b border-[#1E1E2E]/50 last:border-0">
+                          <td className="px-3 py-1.5 text-white font-medium">{u.unit_name}</td>
+                          <td className="px-3 py-1.5 text-gray-400">{u.unit_type || "—"}</td>
+                          <td className="px-3 py-1.5">
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              u.status === "occupied" ? "bg-green-900/30 text-green-400" :
+                              u.status === "notice"   ? "bg-amber-900/30 text-amber-400" :
+                              "bg-white/5 text-gray-400"
+                            }`}>{u.status}</span>
+                          </td>
+                          <td className="px-3 py-1.5 text-gray-400">{u.current_resident || "—"}</td>
+                          <td className="px-3 py-1.5 text-gray-400">{u.monthly_rent ? `$${u.monthly_rent}` : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-5 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">{error}</div>
+            )}
+
+            <div className="mt-8 flex gap-3">
+              <button
+                onClick={() => setStep("property")}
+                className="rounded-xl border border-[#1E1E2E] px-5 py-3.5 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={handlePropertySubmit}
+                disabled={loading}
+                className="flex-1 rounded-xl bg-[#C8102E] py-3.5 text-sm font-bold text-white hover:bg-[#A50D25] disabled:opacity-40 transition-colors"
+              >
+                {loading ? "Creating property…" : rentRollPreview.length > 0 ? `Create Property + Upload ${rentRollPreview.length} Units →` : "Skip & Create Property →"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 4: Webhook ── */}
         {step === "webhook" && createdProperty && (
           <div className="space-y-5">
             <div className="rounded-2xl border border-green-800/50 bg-green-950/20 p-6 flex items-center gap-4">
+
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/20 text-green-400 text-xl">✓</div>
               <div>
                 <p className="font-bold text-white">{createdProperty.name} created!</p>

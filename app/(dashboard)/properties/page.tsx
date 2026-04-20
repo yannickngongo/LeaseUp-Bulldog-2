@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getOperatorEmail } from "@/lib/demo-auth";
 
 interface Property {
@@ -11,9 +12,12 @@ interface Property {
   city: string;
   state: string;
   zip: string;
+  neighborhood?: string;
   phone_number: string;
   active_special?: string;
   website_url?: string;
+  total_units?: number | null;
+  occupied_units?: number | null;
 }
 
 interface PropertyWithStats extends Property {
@@ -26,6 +30,7 @@ function Skeleton({ className }: { className?: string }) {
 }
 
 export default function PropertiesPage() {
+  const router = useRouter();
   const [properties, setProperties] = useState<PropertyWithStats[]>([]);
   const [loading, setLoading]       = useState(true);
 
@@ -34,7 +39,7 @@ export default function PropertiesPage() {
       setLoading(true);
       try {
         const email = await getOperatorEmail();
-        if (!email) return;
+        if (!email) { router.push("/setup"); return; }
 
         const propRes = await fetch(`/api/properties?email=${encodeURIComponent(email)}`);
         const propJson = await propRes.json();
@@ -58,7 +63,7 @@ export default function PropertiesPage() {
       }
     }
     load();
-  }, []);
+  }, [router]);
 
   return (
     <div className="p-4 lg:p-6">
@@ -71,7 +76,7 @@ export default function PropertiesPage() {
             {loading ? "Loading…" : `${properties.length} ${properties.length === 1 ? "property" : "properties"}`}
           </p>
         </div>
-        <Link href="/setup"
+        <Link href="/properties/new"
           className="flex items-center gap-2 rounded-xl bg-[#C8102E] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#A50D25] transition-colors"
           style={{ boxShadow: "0 4px 16px rgba(200,16,46,0.25)" }}>
           <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
@@ -137,6 +142,9 @@ export default function PropertiesPage() {
               {/* Name + address */}
               <h3 className="mb-0.5 font-bold text-gray-900 dark:text-gray-100">{p.name}</h3>
               <p className="text-xs text-gray-400 dark:text-gray-500">{p.address}, {p.city}, {p.state} {p.zip}</p>
+              {p.neighborhood && (
+                <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">📍 {p.neighborhood}</p>
+              )}
 
               {/* Special */}
               {p.active_special && (
@@ -146,7 +154,7 @@ export default function PropertiesPage() {
               )}
 
               {/* Stats */}
-              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-gray-50 pt-4 dark:border-white/5">
+              <div className={`mt-4 grid gap-3 border-t border-gray-50 pt-4 dark:border-white/5 ${p.total_units ? "grid-cols-3" : "grid-cols-2"}`}>
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Active Leads</p>
                   <p className="mt-0.5 text-xl font-bold text-gray-900 dark:text-gray-100">{p.leadCount}</p>
@@ -155,6 +163,19 @@ export default function PropertiesPage() {
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Tours Booked</p>
                   <p className="mt-0.5 text-xl font-bold text-gray-900 dark:text-gray-100">{p.tourCount}</p>
                 </div>
+                {p.total_units ? (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Occupancy</p>
+                    <p className="mt-0.5 text-xl font-bold text-gray-900 dark:text-gray-100">
+                      {p.occupied_units != null
+                        ? `${Math.round((p.occupied_units / p.total_units) * 100)}%`
+                        : "—"}
+                    </p>
+                    <p className="text-[10px] text-gray-400">
+                      {p.occupied_units ?? "?"}/{p.total_units} units
+                    </p>
+                  </div>
+                ) : null}
               </div>
 
               {/* AI number */}
@@ -183,9 +204,9 @@ export default function PropertiesPage() {
                   className="flex-1 rounded-xl border border-gray-200 py-2 text-center text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors dark:border-white/10 dark:text-gray-300">
                   View Leads
                 </Link>
-                <Link href="/setup"
+                <Link href={`/properties/${p.id}`}
                   className="flex-1 rounded-xl border border-gray-200 py-2 text-center text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors dark:border-white/10 dark:text-gray-300">
-                  Edit Property
+                  Edit / Rent Roll
                 </Link>
               </div>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { getOperatorEmail } from "@/lib/demo-auth";
@@ -113,6 +114,7 @@ function Skeleton({ className }: { className?: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AutomationsPage() {
+  const router = useRouter();
   const [loading, setLoading]               = useState(true);
   const [saving, setSaving]                 = useState(false);
   const [savedMsg, setSavedMsg]             = useState("");
@@ -148,7 +150,7 @@ export default function AutomationsPage() {
       setLoading(true);
       try {
         const email = await getOperatorEmail();
-        if (!email) return;
+        if (!email) { router.push("/setup"); return; }
         setEmail(email);
 
         const res = await fetch(`/api/automations/settings?email=${encodeURIComponent(email)}`);
@@ -167,7 +169,7 @@ export default function AutomationsPage() {
       }
     }
     load();
-  }, []);
+  }, [router]);
 
   function selectTemplate(id: string) {
     // Save current editing body into settings before switching

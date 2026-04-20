@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { getOperatorEmail } from "@/lib/demo-auth";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -748,10 +749,21 @@ function CampaignDetail({ campaign, onBack, onApprove }: {
 
 // ─── New Campaign Modal ───────────────────────────────────────────────────────
 
-function NewCampaignModal({ onClose }: { onClose: () => void }) {
+function NewCampaignModal({
+  onClose,
+  operatorId,
+  operatorEmail,
+  onCreated,
+}: {
+  onClose: () => void;
+  operatorId: string;
+  operatorEmail: string;
+  onCreated: () => void;
+}) {
   const [step, setStep] = useState<"form" | "generating" | "done">("form");
+  const [properties, setProperties] = useState<{ id: string; name: string }[]>([]);
   const [form, setForm] = useState({
-    property: "",
+    propertyId: "",
     special: "",
     renterType: "",
     pricingSummary: "",
@@ -759,10 +771,40 @@ function NewCampaignModal({ onClose }: { onClose: () => void }) {
     urgency: "normal",
   });
 
-  function handleGenerate() {
-    if (!form.property) return;
+  useEffect(() => {
+    if (!operatorEmail) return;
+    fetch(`/api/properties?email=${encodeURIComponent(operatorEmail)}`)
+      .then(r => r.json())
+      .then(d => setProperties(d.properties ?? []))
+      .catch(() => {});
+  }, [operatorEmail]);
+
+  async function handleGenerate() {
+    if (!form.propertyId) return;
     setStep("generating");
-    setTimeout(() => setStep("done"), 2500);
+    try {
+      const res = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          property_id:        form.propertyId,
+          operator_id:        operatorId,
+          current_special:    form.special || undefined,
+          target_renter_type: form.renterType || undefined,
+          pricing_summary:    form.pricingSummary || undefined,
+          occupancy_goal:     form.occupancyGoal || undefined,
+          urgency:            form.urgency,
+        }),
+      });
+      if (res.ok) {
+        setStep("done");
+        onCreated();
+      } else {
+        setStep("form");
+      }
+    } catch {
+      setStep("form");
+    }
   }
 
   return (
@@ -778,13 +820,13 @@ function NewCampaignModal({ onClose }: { onClose: () => void }) {
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Property *</label>
               <select
-                value={form.property}
-                onChange={e => setForm(f => ({ ...f, property: e.target.value }))}
+                value={form.propertyId}
+                onChange={e => setForm(f => ({ ...f, propertyId: e.target.value }))}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-100"
               >
                 <option value="">Select a property…</option>
-                {["The Monroe", "Parkview Commons", "Creekside at Summerlin", "Sonoran Ridge", "Desert Bloom"].map(p => (
-                  <option key={p}>{p}</option>
+                {properties.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
             </div>
@@ -842,7 +884,7 @@ function NewCampaignModal({ onClose }: { onClose: () => void }) {
               <button onClick={onClose} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 dark:border-white/10 dark:text-gray-400">Cancel</button>
               <button
                 onClick={handleGenerate}
-                disabled={!form.property}
+                disabled={!form.propertyId}
                 className="rounded-lg bg-[#C8102E] px-5 py-2 text-sm font-semibold text-white hover:bg-[#A50D25] disabled:opacity-40"
               >
                 Generate with AI →
@@ -880,23 +922,28 @@ function NewCampaignModal({ onClose }: { onClose: () => void }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function MarketingPage() {
+  const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [filter, setFilter] = useState<CampaignStatus | "all">("all");
   const [loading, setLoading] = useState(true);
+  const [operatorId, setOperatorId] = useState("");
+  const [operatorEmail, setOperatorEmail] = useState("");
 
   useEffect(() => {
     async function loadCampaigns() {
       setLoading(true);
       try {
         const email = await getOperatorEmail();
-        if (!email) return;
+        if (!email) { router.push("/setup"); return; }
+        setOperatorEmail(email);
         const setupRes = await fetch(`/api/setup?email=${encodeURIComponent(email)}`);
         const setupJson = await setupRes.json();
-        const operatorId = setupJson.operator?.id;
-        if (!operatorId) return;
-        const res = await fetch(`/api/campaigns?operator_id=${operatorId}`);
+        const opId: string = setupJson.operator?.id;
+        if (!opId) return;
+        setOperatorId(opId);
+        const res = await fetch(`/api/campaigns?operator_id=${opId}`);
         const json = await res.json();
         const raw = json.campaigns ?? [];
         // Normalize DB shape to Campaign interface
@@ -928,7 +975,45 @@ export default function MarketingPage() {
       }
     }
     loadCampaigns();
-  }, []);
+  }, [router]);
+
+  function reloadCampaigns() {
+    // Re-run the effect by resetting state
+    setLoading(true);
+    (async () => {
+      try {
+        if (!operatorId) return;
+        const res = await fetch(`/api/campaigns?operator_id=${operatorId}`);
+        const json = await res.json();
+        const raw = json.campaigns ?? [];
+        const normalized: Campaign[] = raw.map((c: Record<string, unknown>) => ({
+          id:                    c.id as string,
+          property:              ((c.properties as Record<string, unknown>)?.name as string) ?? "Property",
+          property_id:           c.property_id as string,
+          operator_id:           c.operator_id as string,
+          status:                (c.status as CampaignStatus) ?? "pending_approval",
+          messaging_angle:       (c.messaging_angle as string) ?? "",
+          recommended_channels:  (c.recommended_channels as AdChannel[]) ?? [],
+          urgency:               (c.urgency as string) ?? "normal",
+          current_special:       (c.current_special as string | null) ?? null,
+          created_at:            new Date(c.created_at as string).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          leads_generated:       (c.leads_generated as number) ?? 0,
+          variations:            ((c.ad_variations as Record<string, unknown>[]) ?? []).map((v) => ({
+            id:            v.id as string,
+            variation_num: v.variation_num as number,
+            headline:      v.headline as string,
+            primary_text:  v.primary_text as string,
+            cta:           v.cta as string,
+            channel:       v.channel as AdChannel,
+            approved:      (v.status as string) === "approved",
+          })),
+        }));
+        setCampaigns(normalized);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }
 
   const selected = campaigns.find(c => c.id === selectedId) ?? null;
 
@@ -1068,7 +1153,14 @@ export default function MarketingPage() {
         )}
       </div>
 
-      {showNew && <NewCampaignModal onClose={() => setShowNew(false)} />}
+      {showNew && (
+        <NewCampaignModal
+          onClose={() => setShowNew(false)}
+          operatorId={operatorId}
+          operatorEmail={operatorEmail}
+          onCreated={() => { setShowNew(false); reloadCampaigns(); }}
+        />
+      )}
     </div>
   );
 }

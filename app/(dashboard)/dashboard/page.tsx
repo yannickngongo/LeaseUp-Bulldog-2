@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import IntelligenceSection from "./IntelligenceSection";
 import { getOperatorEmail } from "@/lib/demo-auth";
 
@@ -97,6 +98,7 @@ function Skeleton({ className }: { className?: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [operator, setOperator]     = useState<Operator | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [leads, setLeads]           = useState<Lead[]>([]);
@@ -128,7 +130,7 @@ export default function DashboardPage() {
       setLoading(true);
       try {
         const email = await getOperatorEmail();
-        if (!email) return;
+        if (!email) { router.push("/setup"); return; }
 
         const [setupRes, propRes] = await Promise.all([
           fetch(`/api/setup?email=${encodeURIComponent(email)}`),
@@ -165,7 +167,7 @@ export default function DashboardPage() {
       }
     }
     load();
-  }, []);
+  }, [router]);
 
   // Live poll every 30s
   useEffect(() => {

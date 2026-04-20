@@ -21,7 +21,7 @@ export default function NewLeadPage() {
 
   useEffect(() => {
     getOperatorEmail().then(async (email) => {
-      if (!email) return;
+      if (!email) { router.push("/setup"); return; }
       const res = await fetch(`/api/properties?email=${encodeURIComponent(email)}`);
       const json = await res.json();
       const props: Property[] = json.properties ?? [];

@@ -5,13 +5,192 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getOperatorEmail } from "@/lib/demo-auth";
 
+// ─── CSV parser ───────────────────────────────────────────────────────────────
+
+interface ParsedUnit {
+  unit_name:        string;
+  unit_type:        string;
+  bedrooms:         number | null;
+  sq_ft:            number | null;
+  status:           string;
+  current_resident: string;
+  lease_end:        string;
+  monthly_rent:     number | null;
+}
+
+function parseRentRollCsv(raw: string): ParsedUnit[] {
+  const lines = raw.trim().split("\n").map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].toLowerCase().split(",").map(h => h.trim().replace(/"/g, ""));
+  const col = (row: string[], name: string) => {
+    const idx = headers.findIndex(h => h.includes(name));
+    return idx >= 0 ? (row[idx] ?? "").trim().replace(/"/g, "") : "";
+  };
+
+  return lines.slice(1).map(line => {
+    const row = line.split(",");
+    const unitName = col(row, "unit");
+    if (!unitName) return null;
+
+    const statusRaw = col(row, "status").toLowerCase();
+    const status =
+      statusRaw.includes("occup") ? "occupied" :
+      statusRaw.includes("notice") ? "notice" :
+      statusRaw.includes("unavail") ? "unavailable" : "vacant";
+
+    const typeRaw = col(row, "type").toLowerCase();
+    const unit_type =
+      typeRaw.includes("studio") ? "studio" :
+      typeRaw.includes("4") ? "4br" :
+      typeRaw.includes("3") ? "3br" :
+      typeRaw.includes("2") ? "2br" :
+      typeRaw.includes("1") ? "1br" : typeRaw || null;
+
+    const bedsRaw = col(row, "bed");
+    const bedrooms = bedsRaw ? parseInt(bedsRaw, 10) || null : null;
+
+    const sqftRaw = col(row, "sq") || col(row, "sqft") || col(row, "size");
+    const sq_ft = sqftRaw ? parseInt(sqftRaw.replace(/\D/g, ""), 10) || null : null;
+
+    const rentRaw = col(row, "rent") || col(row, "price") || col(row, "amount");
+    const monthly_rent = rentRaw ? parseInt(rentRaw.replace(/[^0-9]/g, ""), 10) || null : null;
+
+    return {
+      unit_name:        unitName,
+      unit_type:        unit_type ?? "",
+      bedrooms,
+      sq_ft,
+      status,
+      current_resident: col(row, "resident") || col(row, "tenant") || col(row, "name"),
+      lease_end:        col(row, "lease end") || col(row, "end date") || col(row, "move out"),
+      monthly_rent,
+    } as ParsedUnit;
+  }).filter(Boolean) as ParsedUnit[];
+}
+
+// ─── Rent Roll Upload Component ───────────────────────────────────────────────
+
+function RentRollUpload({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (csv: string) => void;
+}) {
+  const [preview, setPreview] = useState<ParsedUnit[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const text = ev.target?.result as string;
+      onChange(text);
+      const parsed = parseRentRollCsv(text);
+      setPreview(parsed);
+      setShowPreview(true);
+    };
+    reader.readAsText(file);
+  }
+
+  function handlePaste(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    onChange(e.target.value);
+    const parsed = parseRentRollCsv(e.target.value);
+    setPreview(parsed);
+    setShowPreview(parsed.length > 0);
+  }
+
+  const occupied = preview.filter(u => u.status === "occupied" || u.status === "notice").length;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <label className="cursor-pointer rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
+          Upload CSV
+          <input type="file" accept=".csv,.txt" className="hidden" onChange={handleFile} />
+        </label>
+        <span className="text-xs text-gray-400">or paste below</span>
+      </div>
+
+      <textarea
+        value={value}
+        onChange={handlePaste}
+        rows={4}
+        placeholder={`Unit Number,Unit Type,Status,Current Resident,Lease End Date,Monthly Rent\n101,1BR,Occupied,John Smith,2025-12-31,1250\n102,2BR,Vacant,,,1600`}
+        className="w-full rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#16161F] px-4 py-3 text-xs font-mono text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:border-[#C8102E] focus:outline-none resize-none"
+      />
+
+      {showPreview && preview.length > 0 && (
+        <div className="rounded-xl border border-gray-100 dark:border-white/5 overflow-hidden">
+          <div className="flex items-center justify-between bg-gray-50 dark:bg-white/5 px-4 py-2.5">
+            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+              {preview.length} units parsed · {occupied} occupied · {preview.length - occupied} vacant
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowPreview(false)}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              hide
+            </button>
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-white/5">
+                  {["Unit", "Type", "Status", "Resident", "Lease End", "Rent"].map(h => (
+                    <th key={h} className="px-3 py-2 text-left font-semibold text-gray-500 dark:text-gray-400">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {preview.slice(0, 20).map((u, i) => (
+                  <tr key={i} className="border-b border-gray-50 dark:border-white/5 last:border-0">
+                    <td className="px-3 py-1.5 font-medium text-gray-900 dark:text-gray-100">{u.unit_name}</td>
+                    <td className="px-3 py-1.5 text-gray-500 dark:text-gray-400">{u.unit_type || "—"}</td>
+                    <td className="px-3 py-1.5">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        u.status === "occupied" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" :
+                        u.status === "notice"   ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" :
+                        "bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-gray-400"
+                      }`}>
+                        {u.status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-1.5 text-gray-500 dark:text-gray-400">{u.current_resident || "—"}</td>
+                    <td className="px-3 py-1.5 text-gray-500 dark:text-gray-400">{u.lease_end || "—"}</td>
+                    <td className="px-3 py-1.5 text-gray-500 dark:text-gray-400">{u.monthly_rent ? `$${u.monthly_rent}` : "—"}</td>
+                  </tr>
+                ))}
+                {preview.length > 20 && (
+                  <tr>
+                    <td colSpan={6} className="px-3 py-2 text-center text-xs text-gray-400">
+                      +{preview.length - 20} more units
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function NewPropertyPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
+  const [rentRollCsv, setRentRollCsv] = useState("");
 
   const [form, setForm] = useState({
     name: "", address: "", city: "", state: "", zip: "",
+    neighborhood: "",
     phoneNumber: "", activeSpecial: "", websiteUrl: "",
     totalUnits: "", tourBookingUrl: "",
   });
@@ -45,6 +224,7 @@ export default function NewPropertyPage() {
           city:           form.city,
           state:          form.state,
           zip:            form.zip,
+          neighborhood:   form.neighborhood || null,
           phoneNumber:    form.phoneNumber,
           activeSpecial:  form.activeSpecial,
           websiteUrl:     form.websiteUrl,
@@ -54,6 +234,19 @@ export default function NewPropertyPage() {
       });
       const json = await res.json();
       if (!res.ok) { setError(json.error ?? "Failed to create property"); return; }
+
+      // Upload rent roll if provided
+      if (rentRollCsv.trim() && json.property?.id) {
+        const units = parseRentRollCsv(rentRollCsv);
+        if (units.length > 0) {
+          await fetch(`/api/properties/${json.property.id}/units`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ units }),
+          });
+        }
+      }
+
       router.push("/properties");
     } catch {
       setError("Network error — please try again");
@@ -75,6 +268,7 @@ export default function NewPropertyPage() {
 
         <form className="space-y-6" onSubmit={handleSubmit}>
 
+          {/* Property Info */}
           <div className="rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#1C1F2E] p-6">
             <h2 className="mb-5 text-xs font-semibold uppercase tracking-wide text-gray-500">Property Info</h2>
             <div className="space-y-4">
@@ -100,10 +294,16 @@ export default function NewPropertyPage() {
                   <input value={form.zip} onChange={e => set("zip", e.target.value)} placeholder="89101" className={inputCls} />
                 </div>
               </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Neighborhood</label>
+                <input value={form.neighborhood} onChange={e => set("neighborhood", e.target.value)} placeholder="e.g. Summerlin, Henderson, Downtown Las Vegas" className={inputCls} />
+                <p className="mt-1 text-xs text-gray-400">Used for neighborhood-level market analysis (more precise than ZIP code).</p>
+              </div>
               <div className="grid gap-3 grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Total Units</label>
                   <input type="number" value={form.totalUnits} onChange={e => set("totalUnits", e.target.value)} placeholder="120" className={inputCls} />
+                  <p className="mt-1 text-xs text-gray-400">Auto-updated from rent roll if uploaded.</p>
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Website URL</label>
@@ -113,6 +313,7 @@ export default function NewPropertyPage() {
             </div>
           </div>
 
+          {/* Twilio & AI Setup */}
           <div className="rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#1C1F2E] p-6">
             <h2 className="mb-5 text-xs font-semibold uppercase tracking-wide text-gray-500">Twilio & AI Setup</h2>
             <div className="space-y-4">
@@ -132,6 +333,18 @@ export default function NewPropertyPage() {
                 <p className="mt-1 text-xs text-gray-400">AI will share this link when prospects ask about tours.</p>
               </div>
             </div>
+          </div>
+
+          {/* Rent Roll Upload */}
+          <div className="rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-[#1C1F2E] p-6">
+            <div className="mb-5">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Rent Roll</h2>
+              <p className="mt-1 text-xs text-gray-400">
+                Upload or paste your current rent roll CSV to automatically populate units, occupancy, and unit names.
+                Required columns: <span className="font-mono">Unit Number, Status</span>. Optional: Unit Type, Current Resident, Lease End Date, Monthly Rent.
+              </p>
+            </div>
+            <RentRollUpload value={rentRollCsv} onChange={setRentRollCsv} />
           </div>
 
           {error && (

@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { operatorName, email, propertyName, address, city, state, zip, phoneNumber, activeSpecial, websiteUrl, totalUnits, tourBookingUrl } = body;
+  const { operatorName, email, propertyName, address, city, state, zip, neighborhood, phoneNumber, activeSpecial, websiteUrl, totalUnits, tourBookingUrl } = body;
 
   if (!operatorName || !email || !propertyName || !address || !city || !state || !zip || !phoneNumber) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -65,11 +65,12 @@ export async function POST(req: NextRequest) {
     .from("properties")
     .insert({
       operator_id:    operatorId,
-      name:           propertyName,
+      name:              propertyName,
       address,
       city,
       state,
       zip,
+      neighborhood:      neighborhood || null,
       phone_number:      phoneNumber,
       active_special:    activeSpecial || null,
       website_url:       websiteUrl || null,

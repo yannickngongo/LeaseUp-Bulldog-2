@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { getOperatorEmail } from "@/lib/demo-auth";
 
 interface Operator {
@@ -61,6 +62,7 @@ const PLAN_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [operator, setOperator]     = useState<Operator | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [leads, setLeads]           = useState<Lead[]>([]);
@@ -86,7 +88,7 @@ export default function SettingsPage() {
       setLoading(true);
       try {
         const email = await getOperatorEmail();
-        if (!email) return;
+        if (!email) { router.push("/setup"); return; }
         setEmail(email);
 
         const res = await fetch(`/api/setup?email=${encodeURIComponent(email)}`);
@@ -121,7 +123,7 @@ export default function SettingsPage() {
       }
     }
     load();
-  }, []);
+  }, [router]);
 
   async function handleSave() {
     if (!email || !name.trim()) return;
@@ -278,7 +280,7 @@ export default function SettingsPage() {
         <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#1C1F2E]">
           <div className="mb-5 flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">Properties</h2>
-            <a href="/setup" className="text-xs font-semibold text-[#C8102E] hover:underline">+ Add Property</a>
+            <a href="/properties/new" className="text-xs font-semibold text-[#C8102E] hover:underline">+ Add Property</a>
           </div>
 
           {loading ? (
@@ -288,7 +290,7 @@ export default function SettingsPage() {
           ) : properties.length === 0 ? (
             <div className="rounded-lg border-2 border-dashed border-gray-200 dark:border-white/10 py-8 text-center">
               <p className="text-sm text-gray-400">No properties yet.</p>
-              <a href="/setup" className="mt-2 inline-block text-xs font-semibold text-[#C8102E] hover:underline">Set up your first property →</a>
+              <a href="/properties/new" className="mt-2 inline-block text-xs font-semibold text-[#C8102E] hover:underline">Set up your first property →</a>
             </div>
           ) : (
             <div className="space-y-3">
@@ -305,7 +307,7 @@ export default function SettingsPage() {
                       <span className="text-[10px] font-semibold text-gray-400">AI line</span>
                     </div>
                   </div>
-                  <a href="/setup" className="ml-4 shrink-0 text-xs font-medium text-[#C8102E] hover:underline">Edit</a>
+                  <a href={`/properties/${p.id}`} className="ml-4 shrink-0 text-xs font-medium text-[#C8102E] hover:underline">Edit</a>
                 </div>
               ))}
             </div>

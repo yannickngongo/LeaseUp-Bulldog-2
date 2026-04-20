@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { getOperatorEmail } from "@/lib/demo-auth";
 
@@ -25,6 +26,7 @@ function Skeleton({ className }: { className?: string }) {
 }
 
 export default function CalendarPage() {
+  const router = useRouter();
   const [tours, setTours]         = useState<TourLead[]>([]);
   const [loading, setLoading]     = useState(true);
   const [properties, setProperties] = useState<{ id: string; name: string }[]>([]);
@@ -35,7 +37,7 @@ export default function CalendarPage() {
       setLoading(true);
       try {
         const email = await getOperatorEmail();
-        if (!email) return;
+        if (!email) { router.push("/setup"); return; }
 
         const propRes = await fetch(`/api/properties?email=${encodeURIComponent(email)}`);
         const propJson = await propRes.json();
@@ -59,7 +61,7 @@ export default function CalendarPage() {
       }
     }
     load();
-  }, []);
+  }, [router]);
 
   const filtered = propertyFilter === "all"
     ? tours

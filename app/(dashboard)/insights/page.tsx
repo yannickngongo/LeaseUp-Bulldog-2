@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { getOperatorEmail } from "@/lib/demo-auth";
 
@@ -305,6 +306,7 @@ function MarketResearchCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function InsightsPage() {
+  const router = useRouter();
   const [properties, setProperties] = useState<PropertyWithLeads[]>([]);
   const [allLeads, setAllLeads]     = useState<Lead[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -314,7 +316,7 @@ export default function InsightsPage() {
       setLoading(true);
       try {
         const email = await getOperatorEmail();
-        if (!email) return;
+        if (!email) { router.push("/setup"); return; }
 
         const propRes = await fetch(`/api/properties?email=${encodeURIComponent(email)}`);
         const propJson = await propRes.json();
@@ -333,7 +335,7 @@ export default function InsightsPage() {
       }
     }
     load();
-  }, []);
+  }, [router]);
 
   async function runMarketResearch(propertyId: string) {
     const prop = properties.find(p => p.id === propertyId);

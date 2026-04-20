@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -158,6 +159,311 @@ function MetricCell({ label, value, good, benchmark }: { label: string; value: s
       <p className={cn("mt-0.5 text-[11px]", good ? "text-green-600" : "text-gray-400")}>
         {good ? "✓" : "↓"} Benchmark: {benchmark}
       </p>
+    </div>
+  );
+}
+
+// ─── Rent Roll Section ────────────────────────────────────────────────────────
+
+interface Unit {
+  id?: string;
+  unit_name: string;
+  unit_type: string | null;
+  bedrooms: number | null;
+  sq_ft: number | null;
+  status: string;
+  current_resident: string;
+  lease_end: string;
+  monthly_rent: number | null;
+}
+
+function parseRentRollCsv(raw: string): Unit[] {
+  const lines = raw.trim().split("\n").map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].toLowerCase().split(",").map(h => h.trim().replace(/"/g, ""));
+  const col = (row: string[], name: string) => {
+    const idx = headers.findIndex(h => h.includes(name));
+    return idx >= 0 ? (row[idx] ?? "").trim().replace(/"/g, "") : "";
+  };
+  return lines.slice(1).map(line => {
+    const row = line.split(",");
+    const unit_name = col(row, "unit");
+    if (!unit_name) return null;
+    const sr = col(row, "status").toLowerCase();
+    const status = sr.includes("occup") ? "occupied" : sr.includes("notice") ? "notice" : sr.includes("unavail") ? "unavailable" : "vacant";
+    const tr = col(row, "type").toLowerCase();
+    const unit_type = tr.includes("studio") ? "studio" : tr.includes("4") ? "4br" : tr.includes("3") ? "3br" : tr.includes("2") ? "2br" : tr.includes("1") ? "1br" : tr || null;
+    const bedsRaw = col(row, "bed");
+    const sqftRaw = col(row, "sq") || col(row, "sqft") || col(row, "size");
+    const rentRaw = col(row, "rent") || col(row, "price") || col(row, "amount");
+    return {
+      unit_name, unit_type,
+      bedrooms: bedsRaw ? parseInt(bedsRaw, 10) || null : null,
+      sq_ft: sqftRaw ? parseInt(sqftRaw.replace(/\D/g, ""), 10) || null : null,
+      status,
+      current_resident: col(row, "resident") || col(row, "tenant") || col(row, "name"),
+      lease_end: col(row, "lease end") || col(row, "end date") || col(row, "move out"),
+      monthly_rent: rentRaw ? parseInt(rentRaw.replace(/[^0-9]/g, ""), 10) || null : null,
+    } as Unit;
+  }).filter(Boolean) as Unit[];
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  occupied:    "bg-green-100 text-green-700",
+  vacant:      "bg-gray-100 text-gray-600",
+  notice:      "bg-amber-100 text-amber-700",
+  unavailable: "bg-red-100 text-red-600",
+};
+
+function RentRollSection({ propertyId }: { propertyId: string }) {
+  const [units, setUnits]           = useState<Unit[]>([]);
+  const [loading, setLoading]       = useState(true);
+  const [uploading, setUploading]   = useState(false);
+  const [csvText, setCsvText]       = useState("");
+  const [preview, setPreview]       = useState<Unit[]>([]);
+  const [showUpload, setShowUpload] = useState(false);
+  const [showAdd, setShowAdd]       = useState(false);
+  const [addError, setAddError]     = useState("");
+  const [uploadMsg, setUploadMsg]   = useState("");
+
+  const [newUnit, setNewUnit] = useState<Unit>({
+    unit_name: "", unit_type: "", bedrooms: null, sq_ft: null,
+    status: "vacant", current_resident: "", lease_end: "", monthly_rent: null,
+  });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch(`/api/properties/${propertyId}/units`);
+    if (res.ok) {
+      const json = await res.json();
+      setUnits(json.units ?? []);
+    }
+    setLoading(false);
+  }, [propertyId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  function handleCsvChange(text: string) {
+    setCsvText(text);
+    setPreview(parseRentRollCsv(text));
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.name.toLowerCase().endsWith(".pdf")) {
+      setUploadMsg("PDF uploads are not supported yet. Please export your rent roll as CSV and upload that instead.");
+      return;
+    }
+    const text = await file.text();
+    handleCsvChange(text);
+    setUploadMsg("");
+  }
+
+  async function submitCsv() {
+    if (preview.length === 0) return;
+    setUploading(true);
+    setUploadMsg("");
+    const res = await fetch(`/api/properties/${propertyId}/units`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ units: preview }),
+    });
+    if (res.ok) {
+      setUploadMsg(`${preview.length} units saved. Occupancy updated.`);
+      setCsvText(""); setPreview([]);
+      setShowUpload(false);
+      await load();
+    } else {
+      const j = await res.json();
+      setUploadMsg(j.error ?? "Upload failed");
+    }
+    setUploading(false);
+  }
+
+  async function submitNewUnit() {
+    if (!newUnit.unit_name.trim()) { setAddError("Unit name is required"); return; }
+    setAddError("");
+    const res = await fetch(`/api/properties/${propertyId}/units`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ units: [newUnit] }),
+    });
+    if (res.ok) {
+      setNewUnit({ unit_name: "", unit_type: "", bedrooms: null, sq_ft: null, status: "vacant", current_resident: "", lease_end: "", monthly_rent: null });
+      setShowAdd(false);
+      await load();
+    } else {
+      const j = await res.json();
+      setAddError(j.error ?? "Failed to save unit");
+    }
+  }
+
+  const occupied = units.filter(u => u.status === "occupied").length;
+  const vacant   = units.filter(u => u.status === "vacant").length;
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <SectionLabel>Rent Roll & Occupancy</SectionLabel>
+        <div className="flex gap-2">
+          <button onClick={() => { setShowAdd(a => !a); setShowUpload(false); }}
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300">
+            + Add Unit
+          </button>
+          <button onClick={() => { setShowUpload(u => !u); setShowAdd(false); }}
+            className="rounded-lg bg-[#C8102E] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#A50D25]">
+            Upload Rent Roll
+          </button>
+        </div>
+      </div>
+
+      {/* Stats bar */}
+      {units.length > 0 && (
+        <div className="mb-4 flex gap-4">
+          {[
+            { label: "Total Units", value: units.length },
+            { label: "Occupied", value: occupied, color: "text-green-600" },
+            { label: "Vacant", value: vacant, color: "text-amber-600" },
+            { label: "Occupancy", value: `${Math.round((occupied / units.length) * 100)}%`, color: occupied / units.length >= 0.9 ? "text-green-600" : "text-amber-600" },
+          ].map(s => (
+            <div key={s.label} className="rounded-xl border border-gray-100 bg-white px-4 py-2.5 shadow-sm dark:border-white/5 dark:bg-[#1C1F2E]">
+              <p className="text-[10px] font-medium text-gray-400">{s.label}</p>
+              <p className={cn("mt-0.5 text-lg font-bold text-gray-900 dark:text-gray-100", s.color)}>{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add unit form */}
+      {showAdd && (
+        <div className="mb-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#1C1F2E]">
+          <p className="mb-3 text-sm font-semibold text-gray-800 dark:text-gray-100">Add a Unit</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Unit Name *</label>
+              <input value={newUnit.unit_name} onChange={e => setNewUnit(p => ({...p, unit_name: e.target.value}))}
+                placeholder="e.g. 101A" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-100" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Type</label>
+              <select value={newUnit.unit_type ?? ""} onChange={e => setNewUnit(p => ({...p, unit_type: e.target.value}))}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-white/10 dark:bg-[#1C1F2E] dark:text-gray-300">
+                <option value="">—</option>
+                <option value="studio">Studio</option>
+                <option value="1br">1 BR</option>
+                <option value="2br">2 BR</option>
+                <option value="3br">3 BR</option>
+                <option value="4br">4 BR</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Status</label>
+              <select value={newUnit.status} onChange={e => setNewUnit(p => ({...p, status: e.target.value}))}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-white/10 dark:bg-[#1C1F2E] dark:text-gray-300">
+                <option value="vacant">Vacant</option>
+                <option value="occupied">Occupied</option>
+                <option value="notice">Notice</option>
+                <option value="unavailable">Unavailable</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Current Resident</label>
+              <input value={newUnit.current_resident} onChange={e => setNewUnit(p => ({...p, current_resident: e.target.value}))}
+                placeholder="Full name" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-100" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Monthly Rent ($)</label>
+              <input type="number" value={newUnit.monthly_rent ?? ""} onChange={e => setNewUnit(p => ({...p, monthly_rent: e.target.value ? parseInt(e.target.value) : null}))}
+                placeholder="1200" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-100" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">Lease End Date</label>
+              <input type="date" value={newUnit.lease_end} onChange={e => setNewUnit(p => ({...p, lease_end: e.target.value}))}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5 dark:text-gray-100" />
+            </div>
+          </div>
+          {addError && <p className="mt-2 text-xs text-red-600">{addError}</p>}
+          <div className="mt-3 flex gap-2">
+            <button onClick={submitNewUnit} className="rounded-lg bg-[#C8102E] px-4 py-2 text-xs font-semibold text-white hover:bg-[#A50D25]">Save Unit</button>
+            <button onClick={() => setShowAdd(false)} className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Upload panel */}
+      {showUpload && (
+        <div className="mb-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#1C1F2E]">
+          <p className="mb-3 text-sm font-semibold text-gray-800 dark:text-gray-100">Upload Rent Roll</p>
+          <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">Upload a CSV file or paste CSV text. Columns detected automatically. PDF export to CSV is recommended for best results.</p>
+          <label className="mb-3 flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-gray-200 px-4 py-5 text-center hover:border-gray-300 dark:border-white/10">
+            <input type="file" accept=".csv,.pdf" className="hidden" onChange={handleFileUpload} />
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 shrink-0 text-gray-400"><path d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"/></svg>
+            <span className="text-sm text-gray-500">Choose CSV or PDF file</span>
+          </label>
+          <p className="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">Or paste CSV text:</p>
+          <textarea rows={5} value={csvText} onChange={e => handleCsvChange(e.target.value)}
+            placeholder="unit,status,type,resident,rent,lease_end&#10;101,occupied,1br,Jane Smith,1250,2025-08-31"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-xs text-gray-700 focus:border-gray-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-300" />
+          {preview.length > 0 && (
+            <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3 dark:border-white/5 dark:bg-white/5">
+              <p className="mb-2 text-xs font-semibold text-gray-600 dark:text-gray-300">{preview.length} units detected</p>
+              <div className="max-h-40 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead><tr className="text-left text-gray-400"><th className="pb-1 pr-4">Unit</th><th className="pb-1 pr-4">Status</th><th className="pb-1 pr-4">Type</th><th className="pb-1">Resident</th></tr></thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                    {preview.slice(0, 10).map((u, i) => (
+                      <tr key={i}><td className="py-0.5 pr-4 font-medium text-gray-900 dark:text-gray-100">{u.unit_name}</td><td className="py-0.5 pr-4"><span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold", STATUS_COLORS[u.status] ?? "bg-gray-100 text-gray-600")}>{u.status}</span></td><td className="py-0.5 pr-4 text-gray-500">{u.unit_type || "—"}</td><td className="py-0.5 text-gray-500">{u.current_resident || "—"}</td></tr>
+                    ))}
+                    {preview.length > 10 && <tr><td colSpan={4} className="pt-1 text-[10px] text-gray-400">…and {preview.length - 10} more</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {uploadMsg && <p className={cn("mt-2 text-xs font-medium", uploadMsg.includes("saved") ? "text-green-600" : "text-red-600")}>{uploadMsg}</p>}
+          <div className="mt-3 flex gap-2">
+            <button onClick={submitCsv} disabled={uploading || preview.length === 0}
+              className="rounded-lg bg-[#C8102E] px-4 py-2 text-xs font-semibold text-white hover:bg-[#A50D25] disabled:opacity-50">
+              {uploading ? "Saving…" : `Save ${preview.length || ""} Units`}
+            </button>
+            <button onClick={() => { setShowUpload(false); setCsvText(""); setPreview([]); setUploadMsg(""); }}
+              className="rounded-lg border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Unit table */}
+      <Card padding="none">
+        {loading ? (
+          <div className="p-5 text-sm text-gray-400">Loading units…</div>
+        ) : units.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 py-10 text-center">
+            <p className="text-sm text-gray-500 dark:text-gray-400">No units on file yet.</p>
+            <p className="text-xs text-gray-400">Upload a rent roll or add units manually.</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-gray-100 dark:border-white/5 text-left">
+              {["Unit", "Status", "Type", "Resident", "Rent", "Lease End"].map(h => (
+                <th key={h} className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">{h}</th>
+              ))}
+            </tr></thead>
+            <tbody className="divide-y divide-gray-50 dark:divide-white/5">
+              {units.map((u, i) => (
+                <tr key={u.id ?? i} className="hover:bg-gray-50/50 dark:hover:bg-white/5">
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{u.unit_name}</td>
+                  <td className="px-4 py-3"><span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize", STATUS_COLORS[u.status] ?? "bg-gray-100 text-gray-600")}>{u.status}</span></td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{u.unit_type ?? "—"}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{u.current_resident || "—"}</td>
+                  <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{u.monthly_rent ? `$${u.monthly_rent.toLocaleString()}` : "—"}</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{u.lease_end || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
     </div>
   );
 }
@@ -332,6 +638,8 @@ function AIConfigSection() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PropertyDetailPage() {
+  const params     = useParams();
+  const propertyId = params.id as string;
   const occupied   = PROPERTY.occupied;
   const units      = PROPERTY.units;
   const available  = units - occupied;
@@ -585,6 +893,9 @@ export default function PropertyDetailPage() {
           })}
         </div>
       </div>
+
+      {/* ── Rent Roll & Occupancy ───────────────────────────────────────── */}
+      <RentRollSection propertyId={propertyId} />
 
       {/* ── AI Configuration ────────────────────────────────────────────── */}
       <AIConfigSection />

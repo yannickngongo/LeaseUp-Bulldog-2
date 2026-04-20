@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   const { data: properties } = await db
     .from("properties")
-    .select("id, name, phone_number, address, city, state, zip, active_special, website_url")
+    .select("id, name, phone_number, address, city, state, zip, neighborhood, active_special, website_url, total_units, occupied_units, tour_booking_url")
     .eq("operator_id", ctx.operatorId)
     .order("created_at", { ascending: true });
 
