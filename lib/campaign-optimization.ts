@@ -142,16 +142,16 @@ Generate 3-5 specific optimization actions. Respond with JSON only:
     action.id = inserted?.id;
 
     if (operatorId && action.autoExecutable) {
-      const canAuto = await canAutoExecuteAction(operatorId, "campaign_optimization");
-      if (!canAuto) {
+      const canAuto = await canAutoExecuteAction(campaign.property_id, "adjust_messaging");
+      if (!canAuto.allowed) {
         await queueActionForApproval({
           operatorId,
           propertyId: campaign.property_id,
-          actionType: "campaign_optimization",
+          actionType: "adjust_messaging",
           title: action.title,
           description: action.description,
-          urgency: "medium",
-          sourceTable: "campaign_optimization_actions",
+          reasoning: action.expectedImpact,
+          sourceType: "campaign_optimization_actions",
           sourceId: action.id ?? "",
         });
       }
