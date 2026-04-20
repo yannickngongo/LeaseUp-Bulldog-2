@@ -3,6 +3,14 @@
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { LeadStatus } from "@/lib/types";
+import { createClient } from "@supabase/supabase-js";
+
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -778,6 +786,265 @@ function LeadDetailPanel({ lead }: { lead: Lead }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Add Lead Modal
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface PropertyOption { id: string; name: string; phone_number: string; }
+
+function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () => void }) {
+  const [properties, setProperties]   = useState<PropertyOption[]>([]);
+  const [propertyId, setPropertyId]   = useState("");
+  const [firstName, setFirstName]     = useState("");
+  const [lastName, setLastName]       = useState("");
+  const [phone, setPhone]             = useState("");
+  const [email, setEmail]             = useState("");
+  const [moveIn, setMoveIn]           = useState("");
+  const [unitType, setUnitType]       = useState("");
+  const [budgetMin, setBudgetMin]     = useState("");
+  const [budgetMax, setBudgetMax]     = useState("");
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState<string | null>(null);
+  const [success, setSuccess]         = useState(false);
+  const [aiMessage, setAiMessage]     = useState("");
+
+  useEffect(() => {
+    async function loadProperties() {
+      const { data: { user } } = await getSupabase().auth.getUser();
+      if (!user?.email) return;
+      const res = await fetch(`/api/properties?email=${encodeURIComponent(user.email)}`);
+      const json = await res.json();
+      if (json.properties?.length) {
+        setProperties(json.properties);
+        setPropertyId(json.properties[0].id);
+      }
+    }
+    loadProperties();
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const body: Record<string, unknown> = {
+        propertyId,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: phone.trim(),
+        source: "manual",
+      };
+      if (email.trim())   body.email = email.trim();
+      if (moveIn)         body.desiredMoveDate = moveIn;
+      if (unitType)       body.unitType = unitType;
+      if (budgetMin || budgetMax) {
+        body.budget = {};
+        if (budgetMin) (body.budget as Record<string, number>).min = parseInt(budgetMin);
+        if (budgetMax) (body.budget as Record<string, number>).max = parseInt(budgetMax);
+      }
+
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? "Failed to create lead");
+        return;
+      }
+      setAiMessage(json.message ?? "");
+      setSuccess(true);
+    } catch {
+      setError("Network error — please try again");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (success) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl dark:bg-[#1C1F2E]">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-7 w-7 text-green-600">
+              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-gray-100">Lead Added!</h3>
+          <p className="mb-4 text-sm text-gray-500">AI welcome SMS was sent automatically.</p>
+          {aiMessage && (
+            <div className="mb-6 rounded-xl border border-violet-100 bg-violet-50 p-3 text-left text-sm text-violet-800 dark:border-violet-900/30 dark:bg-violet-900/20 dark:text-violet-300">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-violet-500">AI sent:</p>
+              {aiMessage}
+            </div>
+          )}
+          <button
+            onClick={() => { onAdded(); onClose(); }}
+            className="w-full rounded-xl bg-[#C8102E] py-2.5 text-sm font-semibold text-white hover:bg-[#A50D25]"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl dark:bg-[#1C1F2E]">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-white/5">
+          <h2 className="font-semibold text-gray-900 dark:text-gray-100">Add Lead Manually</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="divide-y divide-gray-50 dark:divide-white/5">
+          <div className="space-y-4 px-6 py-5">
+            {/* Property */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Property *</label>
+              {properties.length === 0 ? (
+                <p className="text-xs text-gray-400">Loading properties…</p>
+              ) : (
+                <select
+                  value={propertyId}
+                  onChange={(e) => setPropertyId(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                >
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">First Name *</label>
+                <input
+                  type="text" required value={firstName} onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Jordan"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Last Name *</label>
+                <input
+                  type="text" required value={lastName} onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Ellis"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                />
+              </div>
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Phone Number *</label>
+              <input
+                type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)}
+                placeholder="+17025550101"
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Email <span className="text-gray-400">(optional)</span></label>
+              <input
+                type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder="jordan@email.com"
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+              />
+            </div>
+          </div>
+
+          {/* Optional fields */}
+          <div className="space-y-4 px-6 py-5">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">Optional details</p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Move-in Date</label>
+                <input
+                  type="date" value={moveIn} onChange={(e) => setMoveIn(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Unit Type</label>
+                <select
+                  value={unitType} onChange={(e) => setUnitType(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                >
+                  <option value="">Any</option>
+                  <option value="studio">Studio</option>
+                  <option value="1br">1 Bedroom</option>
+                  <option value="2br">2 Bedrooms</option>
+                  <option value="3br">3 Bedrooms</option>
+                  <option value="4br">4 Bedrooms</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Budget Min</label>
+                <input
+                  type="number" value={budgetMin} onChange={(e) => setBudgetMin(e.target.value)}
+                  placeholder="1500"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">Budget Max</label>
+                <input
+                  type="number" value={budgetMax} onChange={(e) => setBudgetMax(e.target.value)}
+                  placeholder="2200"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-gray-200"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between gap-3 px-6 py-4">
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            {!error && <span />}
+            <div className="flex gap-2">
+              <button
+                type="button" onClick={onClose}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !propertyId || !firstName || !lastName || !phone}
+                className={cn(
+                  "rounded-lg px-5 py-2 text-sm font-semibold transition-colors",
+                  loading || !propertyId || !firstName || !lastName || !phone
+                    ? "cursor-not-allowed bg-gray-100 text-gray-400"
+                    : "bg-[#C8102E] text-white hover:bg-[#A50D25]"
+                )}
+              >
+                {loading ? "Adding…" : "Add Lead + Send SMS →"}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Page
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -786,6 +1053,7 @@ export default function LeadsPage() {
   const [filter, setFilter]             = useState<FilterKey>("all");
   const [search, setSearch]             = useState<string>("");
   const [replyText, setReplyText]       = useState<string>(MOCK_LEADS[0].ai_draft ?? "");
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const selectedLead = MOCK_LEADS.find((l) => l.id === selectedId) ?? MOCK_LEADS[0];
 
@@ -796,7 +1064,29 @@ export default function LeadsPage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Top bar with Add Lead button */}
+      <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-4 py-2.5 dark:border-white/5 dark:bg-[#12141E]">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">Leads</span>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-1.5 rounded-lg bg-[#C8102E] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#A50D25] transition-colors"
+        >
+          <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
+            <path d="M8 2a.75.75 0 01.75.75v4.5h4.5a.75.75 0 010 1.5h-4.5v4.5a.75.75 0 01-1.5 0v-4.5h-4.5a.75.75 0 010-1.5h4.5v-4.5A.75.75 0 018 2z" />
+          </svg>
+          Add Lead
+        </button>
+      </div>
+
+      {showAddModal && (
+        <AddLeadModal
+          onClose={() => setShowAddModal(false)}
+          onAdded={() => setShowAddModal(false)}
+        />
+      )}
+
+      <div className="flex flex-1 overflow-hidden">
       <LeadListPanel
         leads={MOCK_LEADS}
         selectedId={selectedId}
@@ -815,6 +1105,7 @@ export default function LeadsPage() {
       </div>
       <div className="hidden xl:flex">
         <LeadDetailPanel lead={selectedLead} />
+      </div>
       </div>
     </div>
   );
