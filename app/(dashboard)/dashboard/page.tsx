@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/Badge";
 import type { LeadStatus } from "@/lib/types";
+import IntelligenceSection from "./IntelligenceSection";
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -135,6 +136,9 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* ── AI Intelligence ─────────────────────────────────────────────── */}
+      <IntelligenceSection />
 
       {/* ── LUB Performance & Billing ───────────────────────────────────── */}
       <div className="rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] dark:bg-[#1C1F2E] dark:shadow-[0_2px_16px_rgba(0,0,0,0.3)]">
